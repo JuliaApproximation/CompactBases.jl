@@ -18,10 +18,15 @@ using LazyArrays
 using LinearAlgebra
 import LinearAlgebra: Matrix, dot
 using SparseArrays
-using BandedMatrices
 using FillArrays
 
+using BandedMatrices
+using BlockBandedMatrices
+
 using FastGaussQuadrature
+
+using Printf
+using RecipesBase
 
 include("restricted_bases.jl")
 include("unit_vectors.jl")
