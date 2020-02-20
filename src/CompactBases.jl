@@ -34,6 +34,8 @@ include("knot_sets.jl")
 include("quadrature.jl")
 include("skewtridiag.jl")
 
+include("materialize_dsl.jl")
+
 include("finite_differences.jl")
 include("fd_operators.jl")
 include("fd_derivatives.jl")
