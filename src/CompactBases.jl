@@ -27,6 +27,7 @@ include("restricted_bases.jl")
 include("unit_vectors.jl")
 include("knot_sets.jl")
 include("quadrature.jl")
+include("skewtridiag.jl")
 
 include("finite_differences.jl")
 include("fd_operators.jl")
