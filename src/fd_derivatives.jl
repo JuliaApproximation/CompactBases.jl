@@ -10,9 +10,9 @@
 β(B::RadialDifferences{T}, j::Integer) where T = (j^2 - j + 1/2)/(j^2 - j + 1/4) + (j == 1 ? B.δβ₁ : zero(T))
 γ( ::RadialDifferences{T},  ::Integer) where T = zero(T)
 
-α( ::NumerovFiniteDifferences{T},  ::Integer) where T = one(T)
-β(B::NumerovFiniteDifferences{T}, j::Integer) where T = one(T) + (j == 1 ? B.δβ₁ : zero(T))
-γ(B::NumerovFiniteDifferences{T}, j::Integer) where T = (j == 1 ? B.λ : zero(T))
+α( ::ImplicitFiniteDifferences{T},  ::Integer) where T = one(T)
+β(B::ImplicitFiniteDifferences{T}, j::Integer) where T = one(T) + (j == 1 ? B.δβ₁ : zero(T))
+γ(B::ImplicitFiniteDifferences{T}, j::Integer) where T = (j == 1 ? B.λ : zero(T))
 
 α(B::AbstractFiniteDifferences) = α.(Ref(B), B.j[1:end-1])
 β(B::AbstractFiniteDifferences) = β.(Ref(B), B.j)
@@ -46,36 +46,6 @@ for f in [:α, :β, :γ]
         end
     end
 end
-
-# ** Dispatch aliases
-
-const FlatFirstDerivative{Basis<:AbstractFiniteDifferences} = Mul{<:Any, <:Tuple{
-    <:QuasiAdjoint{<:Any, <:Basis},
-    <:Derivative,
-    <:Basis}}
-const LazyFirstDerivative{Basis<:AbstractFiniteDifferences} = Mul{<:Any, <:Tuple{
-    <:Mul{<:Any, <:Tuple{
-        <:QuasiAdjoint{<:Any, <:Basis},
-        <:Derivative}},
-    <:Basis}}
-
-const FirstDerivative{Basis} = Union{FlatFirstDerivative{Basis}, LazyFirstDerivative{Basis}}
-
-const FlatSecondDerivative{Basis<:AbstractFiniteDifferences} = Mul{<:Any, <:Tuple{
-    <:QuasiAdjoint{<:Any, <:Basis},
-    <:QuasiAdjoint{<:Any, <:Derivative},
-    <:Derivative,
-    <:Basis}}
-const LazySecondDerivative{Basis<:AbstractFiniteDifferences} = Mul{<:Any, <:Tuple{
-    <:Mul{<:Any, <:Tuple{
-        <:Mul{<:Any, <:Tuple{
-            <:QuasiAdjoint{<:Any, <:Basis}, <:QuasiAdjoint{<:Any, <:Derivative}}},
-        <:Derivative}},
-    <:Basis}}
-
-const SecondDerivative{Basis} = Union{FlatSecondDerivative{Basis},LazySecondDerivative{Basis}}
-
-const FirstOrSecondDerivative{Basis} = Union{FirstDerivative{Basis},SecondDerivative{Basis}}
 
 # ** Materialization
 
@@ -164,49 +134,51 @@ end
     end
 end
 
-# *** Numerov derivatives
+# # *** Implicit derivatives
 
-function NumerovDerivative(::Type{T}, Δ::Tri, ∇::FirstDerivative) where {T,Tri}
-    B = last(∇.args)
-    # M₁ = Diagonal{T}(I, size(B,2))
+function implicit_lhs(B::BasisOrRestricted{<:ImplicitFiniteDifferences{T}}, difforder) where T
+    m = size(B,2)
+    M = SymTridiagonal(Vector{T}(undef, m), Vector{T}(undef, m-1))
 
-    M₁ = similar(Δ)
-    M₁.dl .= 1
-    M₁.d .= 4
-    M₁.du .= 1
+    j₁ = first(indices(B, 2))
 
-    # Eq. (20ff), Muller (1999), λ = λ′ = √3 - 2, but only if
-    # `singular_origin==true`.
-    B.j[1] == 1 && (M₁.d[1] += B.λ)
+    if difforder == 1
+        M.dv .= 4
+        M.ev .= 1
 
-    M₁ /= 6one(T)
+        # Eq. (20ff), Muller (1999), λ = λ′ = √3 - 2, but only if
+        # `singular_origin==true`.
+        j₁ == 1 && (M₁.d[1] += parent(B).λ)
 
-    NumerovDerivative(Δ, M₁, one(T))
+        M₁ /= 6
+    elseif difforder == 2
+        M.dv .= 10
+        M.ev .= 1
+
+        # Eq. (17), Muller (1999)
+        j₁ == 1 && (M.dv[1] -= 2parent(B).δβ₁)
+
+        M /= -6
+    end
 end
 
-function NumerovDerivative(::Type{T}, Δ::Tri, ∇²::SecondDerivative) where {T,Tri}
-    B = last(∇².args)
+implicit_coeff(::Type{T}, difforder) where T =
+    [one(T), -2one(T)][difforder]
 
-    M₂ = similar(Δ)
-    M₂.dv .= 10
-    M₂.ev .= 1
-
-    # Eq. (17), Muller (1999)
-    B.j[1] == 1 && (M₂.dv[1] -= 2B.δβ₁)
-
-    M₂ /= -6one(T)
-    NumerovDerivative(Δ, M₂, -2one(T))
-end
+implicit_derivative(::Type{T}, M, difforder) where T =
+    ImplicitDerivative(copyto!(similar(M, T), M),
+                       implicit_lhs(last(M.args, difforder)),
+                       implicit_coeff(T, difforder))
 
 materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
     <:AdjointBasisOrRestricted{B},
     <:Derivative,
-    <:BasisOrRestricted{B}}}) where {T,B<:NumerovFiniteDifferences{T}} =
-        NumerovDerivative(T, copyto!(similar(M, T), M), M)
+    <:BasisOrRestricted{B}}}) where {T,B<:ImplicitFiniteDifferences{T}} =
+        implicit_derivative(T, M, 1)
 
 materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
     <:AdjointBasisOrRestricted{B},
     <:QuasiAdjoint{T,<:Derivative},
     <:Derivative,
-    <:BasisOrRestricted{B}}}) where {T,B<:NumerovFiniteDifferences{T}} =
-    NumerovDerivative(T, copyto!(similar(M, T), M), M)
+    <:BasisOrRestricted{B}}}) where {T,B<:ImplicitFiniteDifferences{T}} =
+        implicit_derivative(T, M, 2)

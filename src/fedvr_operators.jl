@@ -1,3 +1,5 @@
+struct FEDVRStyle <: AbstractQuasiArrayApplyStyle end
+
 # * Diagonal matrices
 DiagonalBlockDiagonal(A::AbstractMatrix, rows, cols) =
     BandedBlockBandedMatrix(A, rows,cols, (0,0), (0,0))
@@ -14,7 +16,7 @@ end
 # * Dense operators
 # ** Matrix construction
 
-function Matrix(::UndefInitializer, B::Union{FEDVR{T},RestrictedFEDVR{T}}, ::Type{U}=T) where {T,U}
+function Matrix(::UndefInitializer, B::FEDVROrRestricted{T}, ::Type{U}=T) where {T,U}
     if all(order(B) .== 2)
         n = size(B,2)
         dl = Vector{U}(undef, n-1)
@@ -22,17 +24,14 @@ function Matrix(::UndefInitializer, B::Union{FEDVR{T},RestrictedFEDVR{T}}, ::Typ
         du = Vector{U}(undef, n-1)
         Tridiagonal(dl, d, du)
     else
-        # @show B
-        # @show
         rows = block_structure(B)
-        # @show
         l,u = block_bandwidths(B,rows)
 
         BlockSkylineMatrix{U}(undef, rows, rows, (l,u))
     end
 end
 
-function Base.zeros(B::Union{FEDVR{T},RestrictedFEDVR{T}}, ::Type{U}=T) where {T,U}
+function Base.zeros(B::FEDVROrRestricted{T}, ::Type{U}=T) where {T,U}
     M = Matrix(undef, B, U)
     M .= zero(U)
     M

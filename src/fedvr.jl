@@ -169,9 +169,9 @@ end
 
 locs(B::FEDVR) = B.x
 
-rlocs(B::FEDVR{<:Real}) = locs(B)
+real_locs(B::FEDVR{<:Real}) = locs(B)
 
-function rlocs(B::FEDVR{T}) where T
+function real_locs(B::FEDVR{T}) where T
     R = real(T)
     nx = length(B.x)
     x = Vector{R}(undef, nx)
@@ -184,25 +184,8 @@ function rlocs(B::FEDVR{T}) where T
     x
 end
 
-function locs(B::RestrictedFEDVR)
-    B′ = parent(B)
-    a,b = restriction_extents(B)
-    B′.x[1+a:end-b]
-end
-
-function rlocs(B::RestrictedFEDVR)
-    B′ = parent(B)
-    a,b = restriction_extents(B)
-    rlocs(B′)[1+a:end-b]
-end
-
 IntervalSets.leftendpoint(B::FEDVR) = B.x[1]
 IntervalSets.rightendpoint(B::FEDVR) = B.x[end]
-
-IntervalSets.leftendpoint(B::RestrictedQuasiArray{<:Any,2,<:FEDVR}) =
-    leftendpoint(parent(B))
-IntervalSets.rightendpoint(B::RestrictedQuasiArray{<:Any,2,<:FEDVR}) =
-    rightendpoint(parent(B))
 
 # * Basis functions
 

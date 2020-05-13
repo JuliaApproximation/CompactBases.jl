@@ -62,71 +62,35 @@ difffun(B::RestrictedFEDVR, n::Integer) = i -> diff(parent(B),n,i)
 derop!(A, B::FEDVROrRestricted, n::Integer) =
     set_elements!(difffun(B,n), A, B)
 
-const FlatFirstDerivative = Mul{<:Any, <:Tuple{
-    <:QuasiAdjoint{<:Any, <:FEDVR},
-    <:Derivative,
-    <:FEDVR}}
-const FlatRestrictedFirstDerivative = Mul{<:Any, <:Tuple{
-    <:AdjointRestrictedFEDVR,
-    <:Derivative,
-    <:RestrictedFEDVR}}
+@materialize function *(Ac::AdjointBasisOrRestricted{<:FEDVR},
+                        D::Derivative,
+                        B::BasisOrRestricted{<:FEDVR})
+    FEDVRStyle
+    T -> begin
+        Matrix(undef, B, T)
+    end
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
 
-const LazyFirstDerivative = Mul{<:Any, <:Tuple{
-    <:Mul{<:Any, <:Tuple{
-        <:QuasiAdjoint{<:Any, <:FEDVR},
-        <:Derivative}},
-    <:FEDVR}}
-
-const LazyRestrictedFirstDerivative = Mul{<:Any, <:Tuple{
-    <:Mul{<:Any,<:Tuple{
-        <:AdjointRestrictedFEDVR,
-        <:Derivative}},
-    <:RestrictedFEDVR}}
-
-const FirstDerivative = Union{FlatFirstDerivative, FlatRestrictedFirstDerivative,
-                              LazyFirstDerivative, LazyRestrictedFirstDerivative}
-
-const FlatSecondDerivative = Mul{<:Any, <:Tuple{
-    <:QuasiAdjoint{<:Any, <:FEDVR},
-    <:QuasiAdjoint{<:Any, <:Derivative},
-    <:Derivative,
-    <:FEDVR}}
-const FlatRestrictedSecondDerivative = Mul{<:Any, <:Tuple{
-    <:AdjointRestrictedFEDVR,
-    <:QuasiAdjoint{<:Any, <:Derivative},
-    <:Derivative,
-    <:RestrictedFEDVR}}
-
-const LazySecondDerivative = Mul{<:Any, <:Tuple{
-    <:Mul{<:Any, <:Tuple{
-        <:Mul{<:Any, <:Tuple{
-            <:QuasiAdjoint{<:Any, <:FEDVR}, <:QuasiAdjoint{<:Any, <:Derivative}}},
-        <:Derivative}},
-    <:FEDVR}}
-
-const LazyRestrictedSecondDerivative = Mul{<:Any, <:Tuple{
-    <:Mul{<:Any,<:Tuple{
-        <:Mul{<:Any,<:Tuple{
-            <:AdjointRestrictedFEDVR,
-            <:QuasiAdjoint{<:Any,<:Derivative}}},
-        <:Derivative}},
-    <:RestrictedFEDVR}}
-
-const SecondDerivative = Union{FlatSecondDerivative,FlatRestrictedSecondDerivative,
-                               LazySecondDerivative,LazyRestrictedSecondDerivative}
-
-const FirstOrSecondDerivative = Union{FirstDerivative,SecondDerivative}
-
-difforder(::FirstDerivative) = 1
-difforder(::SecondDerivative) = 2
-
-function copyto!(dest::Union{Tridiagonal,BlockSkylineMatrix}, M::FirstOrSecondDerivative)
-    axes(dest) == axes(M) || throw(DimensionMismatch("axes must be same"))
-    derop!(dest, basis(M), difforder(M))
-    dest
+        derop!(dest, B, 1)
+    end
 end
 
-basis(M::FirstOrSecondDerivative) = last(M.args)
+@materialize function *(Ac::AdjointBasisOrRestricted{<:FEDVR},
+                        Dc::QuasiAdjoint{<:Any,<:Derivative},
+                        D::Derivative,
+                        B::BasisOrRestricted{<:FEDVR})
+    FEDVRStyle
+    T -> begin
+        Matrix(undef, B, T)
+    end
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
 
-similar(M::FirstOrSecondDerivative, ::Type{T}) where T = Matrix(undef, basis(M))
-materialize(M::FirstOrSecondDerivative) = copyto!(similar(M, eltype(M)), M)
+        derop!(dest, B, 2)
+    end
+end

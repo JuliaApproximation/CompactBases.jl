@@ -15,8 +15,8 @@ elementary interval `[-1,1]` to the interval `[a,b]` and store the
 result in `xs` and `ws`, respectively.
 
 """
-function change_interval!(x::AbstractVector, w::AbstractVector,
-                          xs::AbstractVector{T}, ws::AbstractVector{T},
+function change_interval!(xs::AbstractVector{T}, ws::AbstractVector{T},
+                          x::AbstractVector, w::AbstractVector,
                           a::T=zero(T), b::T=one(T)) where T
     xs .= lerp.(a, b, (x .+ 1)/2)
     ws .= (b-a)*w/2
@@ -68,8 +68,8 @@ function lgwt(t::AbstractKnotSet{k,ml,mr,T}, N) where {k,ml,mr,T}
 
     for (i,j) in enumerate(nei)
         sel = (i-1)*N+1 : i*N
-        change_interval!(x, w,
-                         view(xo, sel), view(wo, sel),
+        change_interval!(view(xo, sel), view(wo, sel),
+                         x, w,
                          t[j], t[j+1])
     end
 

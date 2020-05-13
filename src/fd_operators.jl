@@ -1,6 +1,4 @@
 # * Scalar operators
-
-import ContinuumArrays: AbstractQuasiArrayApplyStyle
 struct FiniteDifferencesStyle <: AbstractQuasiArrayApplyStyle end
 
 @materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},

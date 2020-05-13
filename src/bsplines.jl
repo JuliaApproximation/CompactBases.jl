@@ -19,6 +19,12 @@ struct BSpline{T,R<:Real,
     S::SM
 end
 
+const RestrictedBSpline{T} = RestrictedQuasiArray{T,2,<:BSpline{T}}
+const AdjointRestrictedBSpline{T} = AdjointRestrictedQuasiArray{T,2,<:BSpline{T}}
+
+const BSplineOrRestricted{T} = BasisOrRestricted{<:BSpline{T}}
+const AdjointBSplineOrRestricted{T} = AdjointBasisOrRestricted{<:BSpline{T}}
+
 function basis_functions(t::AbstractKnotSet{k}, x::AbstractVector{T}, m=0) where {k,T}
     nf = numfunctions(t)
     B = spzeros(T, length(x), nf)
@@ -46,27 +52,37 @@ function basis_functions(t::AbstractKnotSet{k}, x::AbstractVector{T}, m=0) where
 end
 
 basis_functions(B::BSpline, args...) = basis_functions(B.t, B.x, args...)
+basis_functions(B::RestrictedBSpline, args...) =
+    basis_functions(parent(B), args...)[:,indices(B,2)]
 
-function basis_functions(B::RestrictedQuasiArray{<:Any,<:Any,<:BSpline}, args...)
-    B′,restriction = B.args
-    a,b = restriction_extents(restriction)
-    basis_functions(B′, args...)[:,1+a:end-b]
-end
-
-function overlap_matrix!(S::BandedMatrix, χ, ξ, w)
+function overlap_matrix!(S::Union{BandedMatrix,Tridiagonal}, χ, ξ, w)
     m = min(size(S,1),size(χ,2))
     n = min(size(S,2),size(ξ,2))
     # It is assumed that the bandwidth is correct for the overlap
     # ⟨χ|ξ⟩.
-    p = bandwidth(S, 1)
+    p = max(bandwidths(S)...)
     W = Diagonal(w)
     for i ∈ 1:m
         for j ∈ max(i-p,1):min(i+p,n)
             S[i,j] = χ[:,i]' * W * ξ[:,j]
         end
     end
-    χ == ξ && isreal(χ) && isreal(W) && isreal(ξ) ?
-        Symmetric(S) : S
+    # χ == ξ && isreal(χ) && isreal(W) && isreal(ξ) ?
+    #     Symmetric(S) : S
+    S
+end
+
+function overlap_matrix!(S::Union{BandedMatrix,Tridiagonal},
+                         Ac::AdjointBasisOrRestricted{<:BSpline},
+                         B::BasisOrRestricted{<:BSpline},
+                         op=I)
+    A = parent(Ac)
+    parent(A) == parent(B) ||
+        throw(ArgumentError("Cannot multiply functions on different grids"))
+    values = parent(B).B
+    χ = view(values, :, indices(A,2))
+    ξ = view(values, :, indices(B,2))
+    overlap_matrix!(S, χ, op*ξ, weights(parent(B)))
 end
 
 function BSpline(t::AbstractKnotSet{k}, x::AbstractVector{T}, w::AbstractVector) where {k,T}
@@ -95,19 +111,12 @@ quadrature). The default `k′=3` corresponds to operators O(x²).
 """
 BSpline(t::AbstractKnotSet; k′=3) = BSpline(t, num_quadrature_points(order(t), k′))
 
-const RestrictedBSpline{T} = Union{RestrictedBasis{<:BSpline{T}},<:RestrictedQuasiArray{<:Any,<:Any,<:BSpline{T}}}
-const AdjointRestrictedBSpline{T} = Union{AdjointRestrictedBasis{<:BSpline{T}},<:AdjointRestrictedQuasiArray{<:Any,<:Any,<:BSpline{T}}}
-
-const BSplineOrRestricted{T} = BasisOrRestricted{<:BSpline{T}}
-const AdjointBSplineOrRestricted{T} = AdjointBasisOrRestricted{<:BSpline{T}}
-
 # * Properties
 
 axes(B::BSpline) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(numfunctions(B.t)))
 size(B::BSpline) = (ℵ₁, numfunctions(B.t))
 size(B::RestrictedQuasiArray{<:Any,2,<:BSpline}) = (ℵ₁, length(B.args[2].data))
 ==(A::BSpline,B::BSpline) = A.t == B.t
-==(A::BSplineOrRestricted,B::BSplineOrRestricted) = unrestricted_basis(A) == unrestricted_basis(B)
 
 order(B::BSplineOrRestricted) = order(unrestricted_basis(B).t)
 
@@ -115,35 +124,11 @@ function show(io::IO, B::BSpline{T}) where T
     write(io, "BSpline{$(T)} basis with $(B.t)")
 end
 
-function show(io::IO, B::RestrictedQuasiArray{T,2,BSpline{T}}) where T
-    B′,restriction = B.args
-    a,b = restriction_extents(restriction)
-    N = numfunctions(B′.t)
-    show(io, B′)
-    write(io, ", restricted to basis functions $(1+a)..$(N-b) $(a>0 || b>0 ? "⊂" : "⊆") 1..$(N)")
-end
-
-restriction_extents(B::BSpline) = 0,0
-restriction_extents(B::RestrictedQuasiArray{<:Any,2,<:BSpline}) =
-    restriction_extents(B.args[2])
-
 locs(B::BSpline) = B.x
-
-locs(B::RestrictedQuasiArray{<:Any,2,<:BSpline}) =
-    first(B.args).x
-
 weights(B::BSpline) = B.w
-
-weights(B::RestrictedQuasiArray{<:Any,2,<:BSpline}) =
-    first(B.args).w
 
 IntervalSets.leftendpoint(B::BSpline) = B.x[1]
 IntervalSets.rightendpoint(B::BSpline) = B.x[end]
-
-IntervalSets.leftendpoint(B::RestrictedQuasiArray{<:Any,2,<:BSpline}) =
-    leftendpoint(B.args[1])
-IntervalSets.rightendpoint(B::RestrictedQuasiArray{<:Any,2,<:BSpline}) =
-    rightendpoint(B.args[1])
 
 # # * Basis functions
 
@@ -243,20 +228,59 @@ Base.show(io::IO, spline::SplineVector) =
 Base.show(io::IO, spline::SplineMatrix) =
     write(io, "$(size(spline, 2))d spline on $(spline.args[1])")
 
-# * Mass matrix
-@simplify function *(Ac::QuasiAdjoint{<:Any,<:BSpline}, B::BSpline)
-    A = parent(Ac)
-    A.t.t == B.t.t || throw(ArgumentError("Cannot multiply B-spline bases with different knot sets"))
-    A.x == B.x && A.w == B.w || throw(ArgumentError("Cannot multiply B-spline bases resolved on different Gauß–Legendre points"))
+struct BSplineStyle <: AbstractQuasiArrayApplyStyle end
 
-    A == B && return A.S
+# * Matrix construction
 
-    k = max(order(A.t),order(B.t))
-    m,n = size(A,2),size(B,2)
-
-    S = BandedMatrix(Zeros{eltype(B)}(m,n), (k-1,k-1))
-    overlap_matrix!(S, A.B, B.B, weights(A))
+function Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}=A, ::Type{U}=T) where {T,U}
+    m,n = size(A,2), size(B,2)
+    k = max(order(A),order(B))
+    if k == 2 && m == n
+        dl = Vector{U}(undef, m-1)
+        d = Vector{U}(undef, m)
+        du = Vector{U}(undef, m-1)
+        Tridiagonal(dl, d, du)
+    else
+        ij = first(indices(B,2)) - first(indices(A,2))
+        BandedMatrix{T}(undef, (m,n), (k-1+ij,k-1-ij))
+    end
 end
+
+function Base.zeros(A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}=A, ::Type{U}=T) where {T,U}
+    M = Matrix(undef, A, B, U)
+    M .= zero(U)
+    M
+end
+
+# * Mass matrix
+@materialize function *(Ac::AdjointBasisOrRestricted{<:BSpline},
+                        B::BasisOrRestricted{<:BSpline})
+    BSplineStyle
+    T -> begin
+        Matrix(undef, parent(Ac), B, T)
+    end
+    dest::AbstractMatrix{T} -> begin
+        overlap_matrix!(dest, Ac, B)
+    end
+end
+
+# * Diagonal operators
+
+@materialize function *(Ac::AdjointBasisOrRestricted{<:BSpline},
+                        D::QuasiDiagonal,
+                        B::BasisOrRestricted{<:BSpline})
+    BSplineStyle
+    T -> begin
+        Matrix(undef, parent(Ac), B, T)
+    end
+    dest::AbstractMatrix{T} -> begin
+        # Evaluate the quasi-diagonal operator D on the quadrature roots
+        # of B.
+        op = Diagonal(getindex.(Ref(D.diag), locs(parent(B))))
+        overlap_matrix!(dest, Ac, B, op)
+    end
+end
+
 
 # * Function interpolation
 

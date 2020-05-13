@@ -8,8 +8,6 @@ eltype(::AbstractFiniteDifferences{T}) where T = T
 axes(B::AbstractFiniteDifferences{T}) where T = (Inclusion(leftendpoint(B)..rightendpoint(B)), Base.OneTo(length(locs(B))))
 size(B::AbstractFiniteDifferences) = (ℵ₁, length(locs(B)))
 
-locs(B::RestrictedFiniteDifferences) = locs(parent(B))[indices(B,2)]
-
 ==(A::AbstractFiniteDifferences,B::AbstractFiniteDifferences) = locs(A) == locs(B)
 
 tent(x, x₀::T, δx::T) where T =
@@ -19,19 +17,6 @@ getindex(B::AbstractFiniteDifferences, x::Real, i::Integer) =
     tent(x, locs(B)[i], step(B))
 
 step(B::RestrictedFiniteDifferences) = step(parent(B))
-
-"""
-    within_interval(x, interval)
-
-Return the indices of the elements of `x` that lie within the given
-closed `interval`.
-"""
-function within_interval(x::AbstractRange, interval::ClosedInterval)
-    a = leftendpoint(interval)
-    b = rightendpoint(interval)
-    δx = step(x)
-    max(ceil(Int, (a-x[1])/δx),1):min(floor(Int, (b-x[1])/δx)+1,length(x))
-end
 
 function getindex(B::AbstractFiniteDifferences{T}, x::AbstractRange, sel::AbstractVector) where T
     l = locs(B)
@@ -186,7 +171,7 @@ show(io::IO, B::RadialDifferences{T}) where T =
     write(io, "Radial finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by ρ = $(B.ρ)")
 
 
-# ** Numerov finite differences
+# ** Implicit finite differences
 #=
 This is an implementation of finite difference scheme described in
 
@@ -253,7 +238,7 @@ introduced for problems singular at the origin.
 
 =#
 
-struct NumerovFiniteDifferences{T,I} <: AbstractFiniteDifferences{T,I}
+struct ImplicitFiniteDifferences{T,I} <: AbstractFiniteDifferences{T,I}
     j::UnitRange{I}
     Δx::T
     # Used for radial problems with a singularity at r = 0.
@@ -261,7 +246,7 @@ struct NumerovFiniteDifferences{T,I} <: AbstractFiniteDifferences{T,I}
     δβ₁::T
 end
 
-function NumerovFiniteDifferences(j::UnitRange{I}, Δx::T, singular_origin::Bool=false, Z=zero(T)) where {T<:Real,I<:Integer}
+function ImplicitFiniteDifferences(j::UnitRange{I}, Δx::T, singular_origin::Bool=false, Z=zero(T)) where {T<:Real,I<:Integer}
     λ,δβ₁ = if singular_origin
         first(j) == 1 ||
             throw(ArgumentError("Singular origin correction only valid when grid starts at Δx (i.e. `j[1] == 1`)"))
@@ -270,51 +255,51 @@ function NumerovFiniteDifferences(j::UnitRange{I}, Δx::T, singular_origin::Bool
     else
         zero(T),zero(T)
     end
-    NumerovFiniteDifferences{T,I}(j, Δx, λ, δβ₁)
+    ImplicitFiniteDifferences{T,I}(j, Δx, λ, δβ₁)
 end
 
-NumerovFiniteDifferences(n::I, Δx::T, args...) where {T<:Real,I<:Integer} =
-    NumerovFiniteDifferences(1:n, Δx, args...)
+ImplicitFiniteDifferences(n::I, Δx::T, args...) where {T<:Real,I<:Integer} =
+    ImplicitFiniteDifferences(1:n, Δx, args...)
 
-locs(B::NumerovFiniteDifferences) = B.j*B.Δx
-step(B::NumerovFiniteDifferences{T}) where {T} = B.Δx
+locs(B::ImplicitFiniteDifferences) = B.j*B.Δx
+step(B::ImplicitFiniteDifferences{T}) where {T} = B.Δx
 
-IntervalSets.leftendpoint(B::NumerovFiniteDifferences) = (B.j[1]-1)*step(B)
-IntervalSets.rightendpoint(B::NumerovFiniteDifferences) = (B.j[end]+1)*step(B)
+IntervalSets.leftendpoint(B::ImplicitFiniteDifferences) = (B.j[1]-1)*step(B)
+IntervalSets.rightendpoint(B::ImplicitFiniteDifferences) = (B.j[end]+1)*step(B)
 
-show(io::IO, B::NumerovFiniteDifferences{T}) where {T} =
-    write(io, "Numerov finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(B.Δx)")
+show(io::IO, B::ImplicitFiniteDifferences{T}) where {T} =
+    write(io, "Implicit finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(B.Δx)")
 
-mutable struct NumerovDerivative{T,Tri,Mat,MatFact} <: AbstractMatrix{T}
+mutable struct ImplicitDerivative{T,Tri,Mat,MatFact} <: AbstractMatrix{T}
     Δ::Tri
     M::Mat
     M⁻¹::MatFact
     c::T
 end
-NumerovDerivative(Δ::Tri, M::Mat, c::T) where {T,Tri,Mat} =
-    NumerovDerivative(Δ, M, factorize(M), c)
+ImplicitDerivative(Δ::Tri, M::Mat, c::T) where {T,Tri,Mat} =
+    ImplicitDerivative(Δ, M, factorize(M), c)
 
-Base.show(io::IO, ∂::ND) where {ND<:NumerovDerivative} =
+Base.show(io::IO, ∂::ND) where {ND<:ImplicitDerivative} =
     write(io, "$(size(∂,1))×$(size(∂,2)) $(ND)")
 
-Base.show(io::IO, ::MIME"text/plain", ∂::ND) where {ND<:NumerovDerivative} =
+Base.show(io::IO, ::MIME"text/plain", ∂::ND) where {ND<:ImplicitDerivative} =
     show(io, ∂)
 
-Base.size(∂::ND, args...) where {ND<:NumerovDerivative} = size(∂.Δ, args...)
-Base.eltype(∂::ND) where {ND<:NumerovDerivative} = eltype(∂.Δ)
-Base.axes(∂::ND, args...) where {ND<:NumerovDerivative} = axes(∂.Δ, args...)
+Base.size(∂::ND, args...) where {ND<:ImplicitDerivative} = size(∂.Δ, args...)
+Base.eltype(∂::ND) where {ND<:ImplicitDerivative} = eltype(∂.Δ)
+Base.axes(∂::ND, args...) where {ND<:ImplicitDerivative} = axes(∂.Δ, args...)
 
-Base.:(*)(∂::ND,a::T) where {T<:Number,ND<:NumerovDerivative} =
-    NumerovDerivative(∂.Δ, ∂.M, ∂.M⁻¹, ∂.c*a)
+Base.:(*)(∂::ND,a::T) where {T<:Number,ND<:ImplicitDerivative} =
+    ImplicitDerivative(∂.Δ, ∂.M, ∂.M⁻¹, ∂.c*a)
 
-Base.:(*)(a::T,∂::ND) where {T<:Number,ND<:NumerovDerivative} =
+Base.:(*)(a::T,∂::ND) where {T<:Number,ND<:ImplicitDerivative} =
     ∂ * a
 
-Base.:(/)(∂::ND,a::T) where {T<:Number,ND<:NumerovDerivative} =
+Base.:(/)(∂::ND,a::T) where {T<:Number,ND<:ImplicitDerivative} =
     ∂ * inv(a)
 
 function LinearAlgebra.mul!(y::Y, ∂::ND, x::X) where {Y<:AbstractVector,
-                                                      ND<:NumerovDerivative,
+                                                      ND<:ImplicitDerivative,
                                                       X<:AbstractVector}
     mul!(y, ∂.Δ, x)
     ldiv!(∂.M⁻¹, y)
@@ -322,7 +307,7 @@ function LinearAlgebra.mul!(y::Y, ∂::ND, x::X) where {Y<:AbstractVector,
     y
 end
 
-function Base.copyto!(y::Y, ∂::Mul{<:Any,Tuple{<:NumerovDerivative, X}}) where {X<:AbstractVector,Y<:AbstractVector}
+function Base.copyto!(y::Y, ∂::Mul{<:Any,Tuple{<:ImplicitDerivative, X}}) where {X<:AbstractVector,Y<:AbstractVector}
     C = ∂.C
     mul!(C, ∂.A, ∂.B)
     lmul!(∂.α, C)
@@ -332,26 +317,26 @@ end
 for op in [:(+), :(-)]
     for Mat in [:Diagonal, :Tridiagonal, :SymTridiagonal, :UniformScaling]
         @eval begin
-            function Base.$op(∂::ND, B::$Mat) where {ND<:NumerovDerivative}
+            function Base.$op(∂::ND, B::$Mat) where {ND<:ImplicitDerivative}
                 B̃ = inv(∂.c)*∂.M*B
-                NumerovDerivative($op(∂.Δ, B̃), ∂.M, ∂.M⁻¹, ∂.c)
+                ImplicitDerivative($op(∂.Δ, B̃), ∂.M, ∂.M⁻¹, ∂.c)
             end
         end
     end
 end
 
-struct NumerovFactorization{TriFact,Mat}
+struct ImplicitFactorization{TriFact,Mat}
     Δ⁻¹::TriFact
     M::Mat
 end
 
-Base.size(∂⁻¹::NF, args...) where {NF<:NumerovFactorization} = size(∂⁻¹.M, args...)
-Base.eltype(∂⁻¹::NF) where {NF<:NumerovFactorization} = eltype(∂⁻¹.M)
+Base.size(∂⁻¹::NF, args...) where {NF<:ImplicitFactorization} = size(∂⁻¹.M, args...)
+Base.eltype(∂⁻¹::NF) where {NF<:ImplicitFactorization} = eltype(∂⁻¹.M)
 
-LinearAlgebra.factorize(∂::ND) where {ND<:NumerovDerivative} =
-    NumerovFactorization(factorize(∂.c*∂.Δ), ∂.M)
+LinearAlgebra.factorize(∂::ND) where {ND<:ImplicitDerivative} =
+    ImplicitFactorization(factorize(∂.c*∂.Δ), ∂.M)
 
-function LinearAlgebra.ldiv!(y, ∂⁻¹::NF, x) where {NF<:NumerovFactorization}
+function LinearAlgebra.ldiv!(y, ∂⁻¹::NF, x) where {NF<:ImplicitFactorization}
     mul!(y, ∂⁻¹.M, x)
     ldiv!(∂⁻¹.Δ⁻¹, y)
     y
