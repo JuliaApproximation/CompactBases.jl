@@ -115,7 +115,6 @@ BSpline(t::AbstractKnotSet; k′=3) = BSpline(t, num_quadrature_points(order(t),
 
 axes(B::BSpline) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(numfunctions(B.t)))
 size(B::BSpline) = (ℵ₁, numfunctions(B.t))
-size(B::RestrictedQuasiArray{<:Any,2,<:BSpline}) = (ℵ₁, length(B.args[2].data))
 ==(A::BSpline,B::BSpline) = A.t == B.t
 
 order(B::BSplineOrRestricted) = order(unrestricted_basis(B).t)
@@ -293,7 +292,9 @@ end
 function Base.:(\ )(B::RestrictedBSpline, f::BroadcastQuasiArray)
     axes(f,1) == axes(B,1) ||
         throw(DimensionMismatch("Function on $(axes(f,1).domain) cannot be interpolated over basis on $(axes(B,1).domain)"))
-    x = locs(B)
+    # We need to evaluate the basis functions of the restricted
+    # B-spline basis on /all/ quadrature points.
+    x = locs(parent(B))
     V = B[x,:]
     V \ getindex.(Ref(f), x)
 end

@@ -2,7 +2,11 @@
 *.jl.cov
 *.jl.mem
 .DS_Store
+ltximg
 /Manifest.toml
 /dev/
 /docs/build/
 /docs/site/
+/docs/Manifest.toml
+/docs/src/figures
+/docs/src/assets/logo.svg

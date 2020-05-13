@@ -148,9 +148,9 @@ function implicit_lhs(B::BasisOrRestricted{<:ImplicitFiniteDifferences{T}}, diff
 
         # Eq. (20ff), Muller (1999), λ = λ′ = √3 - 2, but only if
         # `singular_origin==true`.
-        j₁ == 1 && (M₁.d[1] += parent(B).λ)
+        j₁ == 1 && (M.dv[1] += parent(B).λ)
 
-        M₁ /= 6
+        M /= 6
     elseif difforder == 2
         M.dv .= 10
         M.ev .= 1
@@ -162,12 +162,14 @@ function implicit_lhs(B::BasisOrRestricted{<:ImplicitFiniteDifferences{T}}, diff
     end
 end
 
+# f'  =   M₁⁻¹*Δ₁*f   Eq. (19)
+# f'' = -2M₂⁻¹*Δ₂*f   Eq. (13)
 implicit_coeff(::Type{T}, difforder) where T =
     [one(T), -2one(T)][difforder]
 
 implicit_derivative(::Type{T}, M, difforder) where T =
     ImplicitDerivative(copyto!(similar(M, T), M),
-                       implicit_lhs(last(M.args, difforder)),
+                       implicit_lhs(last(M.args), difforder),
                        implicit_coeff(T, difforder))
 
 materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{

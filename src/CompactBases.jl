@@ -53,7 +53,7 @@ include("inner_products.jl")
 include("densities.jl")
 
 export AbstractFiniteDifferences, FiniteDifferences, RadialDifferences, ImplicitFiniteDifferences,
-    Derivative, dot, QuasiDiagonal
+    Derivative, dot, QuasiDiagonal, Inclusion, ..
 
 export FEDVR, Derivative, @elem, dot
 
