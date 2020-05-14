@@ -3,31 +3,63 @@ const RestrictedFiniteDifferences{T,B<:AbstractFiniteDifferences{T}} =
     RestrictedQuasiArray{T,2,B}
 const FiniteDifferencesOrRestricted = BasisOrRestricted{<:AbstractFiniteDifferences}
 
+abstract type NodeDistribution end
+struct Uniform <: NodeDistribution end
+struct NonUniform <: NodeDistribution end
+
 eltype(::AbstractFiniteDifferences{T}) where T = T
 
 axes(B::AbstractFiniteDifferences{T}) where T = (Inclusion(leftendpoint(B)..rightendpoint(B)), Base.OneTo(length(locs(B))))
 size(B::AbstractFiniteDifferences) = (ℵ₁, length(locs(B)))
+"""
+    local_step(B, i)
+
+The step size around grid point `i`. For uniform grids, this is
+equivalent to [`step`](@ref).
+"""
+local_step(B::AbstractFiniteDifferences, _) = step(B)
+weight(B::AbstractFiniteDifferences{T}, _) where T = one(T)
+weights(B::AbstractFiniteDifferences) = weight.(Ref(B), axes(B,2))
 
 ==(A::AbstractFiniteDifferences,B::AbstractFiniteDifferences) = locs(A) == locs(B)
 
-tent(x, x₀::T, δx::T) where T =
-    one(T) - abs(clamp((x-x₀)/δx, -one(T), one(T)))
+function loc(B::AbstractFiniteDifferences, i)
+    N = size(B,2)
+    if i < 1
+        loc(B,1) - local_step(B,1)
+    elseif i > N
+        loc(B,N) + local_step(B,N)
+    else
+        locs(B)[i]
+    end
+end
+
+tent(x, a, b, c) =
+    1 - clamp((b-x)/(b-a), 0, 1) - clamp((b-x)/(b-c), 0, 1)
 
 getindex(B::AbstractFiniteDifferences, x::Real, i::Integer) =
-    tent(x, locs(B)[i], step(B))
+    weight(B,i)*tent(x, loc(B, i-1), loc(B, i), loc(B, i+1))
 
 step(B::RestrictedFiniteDifferences) = step(parent(B))
+local_step(B::RestrictedFiniteDifferences, i) = local_step(parent(B), j+first(indices(B,2))-1)
 
 function getindex(B::AbstractFiniteDifferences{T}, x::AbstractRange, sel::AbstractVector) where T
     l = locs(B)
-    δx = step(B)
     χ = spzeros(T, length(x), length(sel))
     o = sel[1] - 1
+
+    n = length(l)
+    j = sel[1]
+    b = l[j]
+    a = j > 1 ? l[j-1] : 2b - l[j+1]
     for j in sel
-        x₀ = l[j]
+        c = j < n ? l[j+1] : 2b - l[j-1]
+        x₀ = b
         J = j - o
+        δx = local_step(B, j)
+        w = weight(B, j)
         for i ∈ within_interval(x, x₀ - δx..x₀ + δx)
-            χ[i,J] = tent(x[i], x₀, δx)
+            χ[i,J] = w*tent(x[i], a, b, c)
         end
     end
     χ
@@ -81,9 +113,10 @@ const LazyFDInnerProduct{FD<:FiniteDifferencesOrRestricted} = Mul{<:Any,<:Tuple{
 
 # * Mass matrix
 
-@simplify function *(Ac::QuasiAdjoint{<:Any,<:AbstractFiniteDifferences}, B::AbstractFiniteDifferences)
+@simplify function *(Ac::QuasiAdjoint{<:Any,<:FiniteDifferencesOrRestricted}, B::FiniteDifferencesOrRestricted)
     A = parent(Ac)
-    A == B || throw(ArgumentError("Cannot multiply functions on different grids"))
+    parent(A) == parent(B) ||
+        throw(ArgumentError("Cannot multiply functions on different grids"))
     I*step(B)
 end
 
@@ -136,40 +169,156 @@ IntervalSets.rightendpoint(B::FiniteDifferences) = (B.j[end]+1)*step(B)
 show(io::IO, B::FiniteDifferences{T}) where {T} =
     write(io, "Finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(B.Δx)")
 
-# ** Radial finite differences
-# Specialized finite differences for the case where there is
-# Dirichlet0 boundary condition at r = 0.
-struct RadialDifferences{T,I} <: AbstractFiniteDifferences{T,I}
-    j::Base.OneTo{I}
-    ρ::T
-    Z::T
-    δβ₁::T # Correction used for bare Coulomb potentials, Eq. (22) Schafer2009
+# ** Staggered finite differences
 
-    RadialDifferences(n::I, ρ::T, Z=one(T),
-                      δβ₁=Z*ρ/8 * (one(T) + Z*ρ)) where {I<:Integer, T} =
-                          new{T,I}(Base.OneTo(n), ρ, convert(T,Z), convert(T,δβ₁))
+local_step(r::AbstractRange, _) = step(r)
+function local_step(r::AbstractVector, j)
+    if j == 1
+        (r[2] - r[1])
+    elseif j == length(r)
+        r[j] - r[j-1]
+    else
+        (r[j+1]-r[j-1])/2
+    end
+end
+
+schafer_corner_fix(ρ, Z) = 1/ρ^2*Z*ρ/8*(1 + Z*ρ)
+
+function log_lin_grid!(r, ρₘᵢₙ, ρₘₐₓ, α, js)
+    δρ = ρₘₐₓ-ρₘᵢₙ
+    for j = js
+        r[j] = r[j-1] + ρₘᵢₙ + (1-exp(-α*r[j-1]))*δρ
+    end
+end
+
+function log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, n::Integer)
+    r = zeros(n)
+    r[1] = ρₘᵢₙ/2
+    log_lin_grid!(r, ρₘᵢₙ, ρₘₐₓ, α, 2:n)
+    r
+end
+
+function log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, rₘₐₓ)
+    # Guess n
+    n = ceil(Int, rₘₐₓ/ρₘₐₓ)
+    r = zeros(n)
+    r[1] = ρₘᵢₙ/2
+    log_lin_grid!(r, ρₘᵢₙ, ρₘₐₓ, α, 2:n)
+    nprev = n
+    while r[end] < rₘₐₓ
+        n *= 2
+        resize!(r, n)
+        log_lin_grid!(r, ρₘᵢₙ, ρₘₐₓ, α, nprev+1:n)
+        nprev = n
+    end
+    j = findlast(<(rₘₐₓ), r)
+    r[1:j+1]
 end
 
 """
-    RadialDifferences(rₘₐₓ::T, n::I, args...)
+    StaggeredFiniteDifferences
 
-Convenience constructor for [`RadialDifferences`](@ref) covering the
+Staggered finite differences with variationally derived three-points
+stencils for the case where there is Dirichlet0 boundary condition at
+r = 0. Supports non-uniform grids, c.f.
+
+- Krause, J. L., & Schafer, K. J. (1999). Control of THz Emission from
+  Stark Wave Packets. The Journal of Physical Chemistry A, 103(49),
+  10118–10125. http://dx.doi.org/10.1021/jp992144
+
+"""
+struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B} <: AbstractFiniteDifferences{T,Int}
+    r::V
+    Z::T
+    δβ₁::T # Correction used for bare Coulomb potentials, Eq. (22) Schafer2009
+    α::A
+    β::B
+    function StaggeredFiniteDifferences(r::V, Z=one(T),
+                                        δβ₁=schafer_corner_fix(local_step(r,1), Z)) where {T,V<:AbstractVector{T}}
+        issorted(r) ||
+            throw(ArgumentError("Node locations must be non-decreasing"))
+
+        N = length(r)
+        α = zeros(T, N-1)
+        β = zeros(T, N)
+
+        r̃ = vcat(r, 2r[end]-r[end-1])
+        a = 2r[1]-r[2]
+        b,c,d = r[1],r[2],r[3]
+
+        β[1] = δβ₁
+
+        for j = 1:N
+            if j < N
+                d = r̃[j+2]
+                α[j] = 2/((c-b)*√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
+            end
+
+            β[j] += 1/(c-a)*(1/(c-b)*((c+b)/2b)^2 +
+                             1/(b-a)*((b+a)/2b)^2)
+
+            a,b,c = b,c,d
+        end
+
+        new{T,V,typeof(α),typeof(β)}(r, T(Z), T(δβ₁), α, β)
+    end
+
+    # Constructor of uniform grid
+    StaggeredFiniteDifferences(n::Integer, ρ, args...) =
+        StaggeredFiniteDifferences(ρ*(1:n) .- ρ/2, args...)
+
+    """
+    StaggeredFiniteDifferences(rₘₐₓ::T, n::I, args...)
+
+Convenience constructor for [`StaggeredFiniteDifferences`](@ref) covering the
 open interval `(0,rₘₐₓ)` with `n` grid points.
 """
-RadialDifferences(rₘₐₓ::T, n::I, args...) where {I<:Integer, T} =
-    RadialDifferences(n, rₘₐₓ/(n+one(T)/2), args...)
+    StaggeredFiniteDifferences(rₘₐₓ::T, n::I, args...) where {I<:Integer, T} =
+        StaggeredFiniteDifferences(n, rₘₐₓ/(n-one(T)/2), args...)
 
-locs(B::RadialDifferences{T}) where T = (B.j .- one(T)/2)*B.ρ
-step(B::RadialDifferences{T}) where {T} = B.ρ
+    # Constructor of log-linear grid
+    StaggeredFiniteDifferences(ρₘᵢₙ, ρₘₐₓ, α, n::Integer, args...) =
+        StaggeredFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, n::Integer), args...)
 
-IntervalSets.leftendpoint(B::RadialDifferences{T}) where T = zero(T)
-IntervalSets.rightendpoint(B::RadialDifferences{T}) where T = (B.j[end]+one(T)/2)*step(B)
+    StaggeredFiniteDifferences(ρₘᵢₙ::T, ρₘₐₓ::T, α::T, rₘₐₓ::T, args...) where {T<:Real} =
+        StaggeredFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, rₘₐₓ), args...)
+end
 
-==(A::RadialDifferences,B::RadialDifferences) = locs(A) == locs(B) && A.Z == B.Z && A.δβ₁ == B.δβ₁
+distribution(::StaggeredFiniteDifferences{<:Any,<:AbstractRange}) = Uniform()
+distribution(::StaggeredFiniteDifferences) = NonUniform()
 
-show(io::IO, B::RadialDifferences{T}) where T =
-    write(io, "Radial finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by ρ = $(B.ρ)")
+locs(B::StaggeredFiniteDifferences) = B.r
+# step is only well-defined for uniform grids
+step(B::StaggeredFiniteDifferences{<:Any,<:AbstractRange}) = step(B.r)
+local_step(B::StaggeredFiniteDifferences, j) = local_step(B.r, j)
+weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
+weight(B::StaggeredFiniteDifferences, j) = 1/√(local_step(B, j))
 
+IntervalSets.leftendpoint(B::StaggeredFiniteDifferences{T}) where T = zero(T)
+IntervalSets.rightendpoint(B::StaggeredFiniteDifferences{T}) where T = 2B.r[end]-B.r[end-1]
+
+==(A::StaggeredFiniteDifferences,B::StaggeredFiniteDifferences) = locs(A) == locs(B) && A.Z == B.Z && A.δβ₁ == B.δβ₁
+
+show(io::IO, B::StaggeredFiniteDifferences{T}) where T =
+    write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points")
+
+show(io::IO, B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T =
+    write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by ρ = $(step(B))")
+
+_mass_matrix(::Uniform, B::StaggeredFiniteDifferences) = I*step(B)
+# In the non-uniform case, the integration measure <=> quadrature
+# weight varies throughout the domain, and is baked into the
+# coefficients.
+_mass_matrix(::NonUniform, B::StaggeredFiniteDifferences) = I
+
+@simplify function *(Ac::QuasiAdjoint{<:Any,<:BasisOrRestricted{<:StaggeredFiniteDifferences}},
+                     B::BasisOrRestricted{<:StaggeredFiniteDifferences})
+    A = parent(Ac)
+    pB = parent(B)
+    parent(A) == pB ||
+        throw(ArgumentError("Cannot multiply functions on different grids"))
+    _mass_matrix(distribution(pB), pB)
+end
 
 # ** Implicit finite differences
 #=
@@ -351,5 +500,7 @@ end
 function Base.:(\ )(B::FD, f::BroadcastQuasiArray) where {T,FD<:AbstractFiniteDifferences{T}}
     axes(f,1) == axes(B,1) ||
         throw(DimensionMismatch("Function on $(axes(f,1).domain) cannot be interpolated over basis on $(axes(B,1).domain)"))
-    getindex.(Ref(f), locs(B))
+
+    x = locs(B)
+    getindex.(Ref(f), x) ./ weights(B)
 end

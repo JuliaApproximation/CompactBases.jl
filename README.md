@@ -94,12 +94,12 @@ UniformScaling{Float64}
 
 ```julia
 # Staggered, uniform finite-differences
-test_basis(RadialDifferences(N, Δx))
+test_basis(StaggeredFiniteDifferences(N, Δx))
 ```
 
 ```
 ----------------------------------------------------------------------------------------------------
-Radial finite differences basis {Float64} on 0.0..0.875 with 3 points spaced by ρ = 0.25
+Staggered finite differences basis {Float64} on 0.0..0.875 with 3 points spaced by ρ = 0.25
 [ Info: Mass matrix
 UniformScaling{Float64}
 0.25*I

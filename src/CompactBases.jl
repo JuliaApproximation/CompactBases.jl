@@ -54,8 +54,8 @@ include("bspline_derivatives.jl")
 include("inner_products.jl")
 include("densities.jl")
 
-export AbstractFiniteDifferences, FiniteDifferences, RadialDifferences, ImplicitFiniteDifferences,
-    Derivative, dot, QuasiDiagonal, Inclusion, ..
+export AbstractFiniteDifferences, FiniteDifferences, StaggeredFiniteDifferences, ImplicitFiniteDifferences,
+    Derivative, dot, QuasiDiagonal, Inclusion, .., distribution
 
 export FEDVR, Derivative, @elem, dot
 

@@ -4,11 +4,13 @@
 β(::FiniteDifferences{T}, ::Integer) where T = one(T)
 γ(::FiniteDifferences{T}, ::Integer) where T = zero(T)
 
-# Three-point stencil with variationally derived coefficients for
-# singularity at r=0.
-α( ::RadialDifferences,    j::Integer)         = j^2/(j^2 - 1/4)
-β(B::RadialDifferences{T}, j::Integer) where T = (j^2 - j + 1/2)/(j^2 - j + 1/4) + (j == 1 ? B.δβ₁ : zero(T))
-γ( ::RadialDifferences{T},  ::Integer) where T = zero(T)
+α(B::StaggeredFiniteDifferences,    j::Integer)         = B.α[j]
+β(B::StaggeredFiniteDifferences{T}, j::Integer) where T = B.β[j]
+γ( ::StaggeredFiniteDifferences{T},  ::Integer) where T = zero(T)
+
+α(B::StaggeredFiniteDifferences)            = B.α
+β(B::StaggeredFiniteDifferences)            = B.β
+γ(B::StaggeredFiniteDifferences{T}) where T = zeros(T, length(B.r))
 
 α( ::ImplicitFiniteDifferences{T},  ::Integer) where T = one(T)
 β(B::ImplicitFiniteDifferences{T}, j::Integer) where T = one(T) + (j == 1 ? B.δβ₁ : zero(T))
@@ -19,16 +21,14 @@
 γ(B::AbstractFiniteDifferences) = γ.(Ref(B), B.j)
 
 function α(B̃::RestrictedFiniteDifferences)
-    B = parent(B̃)
     j = indices(B̃,2)
-    α.(Ref(B), B.j[j[1]:(j[end]-1)])
+    α(parent(B̃))[j[1]:(j[end]-1)]
 end
 
 for f in [:β, :γ]
     @eval begin
         function $f(B̃::RestrictedFiniteDifferences)
-            B = parent(B̃)
-            $f.(Ref(B), B.j[indices(B̃,2)])
+            $f(parent(B̃))[indices(B̃,2)]
         end
     end
 end
@@ -41,8 +41,7 @@ for f in [:α, :β, :γ]
             i,i′ = extrema(indices(Ã,2))
             j,j′ = extrema(indices(B̃,2))
             k = max(i+min(0,band),j-max(0,band)):min(i′+min(0,band),j′-max(0,band))
-            B = parent(B̃)
-            $f.(Ref(B), B.j[k])
+            $f(parent(B̃))[k]
         end
     end
 end
