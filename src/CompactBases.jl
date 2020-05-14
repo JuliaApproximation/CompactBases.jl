@@ -21,6 +21,7 @@ import LinearAlgebra: Matrix, dot
 using SparseArrays
 using FillArrays
 
+using OffsetArrays
 using BandedMatrices
 using BlockBandedMatrices
 
@@ -38,6 +39,7 @@ include("skewtridiag.jl")
 
 include("materialize_dsl.jl")
 
+include("fornberg.jl")
 include("finite_differences.jl")
 include("fd_operators.jl")
 include("fd_derivatives.jl")
