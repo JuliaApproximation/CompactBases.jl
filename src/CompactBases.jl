@@ -26,7 +26,7 @@ using BlockBandedMatrices
 
 using FastGaussQuadrature
 
-using Printf
+using Formatting
 using RecipesBase
 
 include("restricted_bases.jl")

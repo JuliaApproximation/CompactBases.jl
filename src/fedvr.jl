@@ -95,8 +95,9 @@ end
 function show(io::IO, B::FEDVR{T}) where T
     write(io, "FEDVR{$(T)} basis with $(nel(B)) elements on $(axes(B,1).domain)")
     if T <: Complex
-        rot = @printf(io, " with %s @ %.2f°", B.t₀ <= first(B.t) ? "ICS" : "ECS", rad2deg(angle(B.eiϕ)))
-        B.t₀ > first(B.t) && @printf(io, " starting at %.2g", B.t₀)
+        ics = B.t₀ <= first(B.t)
+        rot = printfmt(io, " with {1:s} @ {2:0.2f}°", ics ? "ICS" : "ECS", rad2deg(angle(B.eiϕ)))
+        !ics && printfmt(io, " starting at {1:f}", B.t₀)
     end
 end
 

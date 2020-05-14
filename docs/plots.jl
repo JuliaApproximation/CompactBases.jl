@@ -36,6 +36,12 @@ function logo()
     savefig("docs/src/assets/logo.svg", transparent=true)
 end
 
+macro echo(expr)
+    println(expr)
+    :(@time $expr)
+end
+
+@info "Documentation plots"
 mkpath("docs/src/figures")
-logo()
+@echo logo()
 include("bspline_plots.jl")
