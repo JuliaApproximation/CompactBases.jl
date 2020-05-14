@@ -36,6 +36,44 @@ function logo()
     savefig("docs/src/assets/logo.svg", transparent=true)
 end
 
+function simple_example()
+    a,b = 0.0,1.0 # Extents
+    N = 13 # Number of nodes
+    k = 5 # Order of FE-DVR/B-splines
+    x = range(a, stop=b, length=1000)
+
+    Δx = (b-a)/(N+1) # Grid spacing
+    # Standard, uniform finite-differences
+    fd = FiniteDifferences(N, Δx)
+    # Staggered, uniform finite-differences
+    sfd_uni = StaggeredFiniteDifferences(N, Δx)
+    # Staggered, non-uniform finite-differences
+    sfd_nonuni = StaggeredFiniteDifferences(0.01, 0.5, 0.1, b)
+
+    # Finite-element boundaries
+    tf = range(a, stop=b, length=N+2)
+    # We can vary the polynomial order in each element
+    forder = vcat(7, fill(4,length(tf)-2))
+    # By indexing the second dimension, we can implement Dirichlet0
+    # boundary conditions.
+    fem = FEDVR(tf, forder)[:,2:end-1]
+
+    tb = ExpKnotSet(k, -2.0, log10(b), N+1)
+    splines = BSpline(tb)[:,2:end-1]
+
+    bases = [fd, sfd_uni, sfd_nonuni, fem, splines]
+    m = length(bases)
+
+    cfigure("simple example", figsize=(6,9)) do
+        for (i,basis) in enumerate(bases)
+            csubplot(m,1,i,nox=i<m) do
+                plot(x, basis[x,:])
+            end
+        end
+    end
+    savefig("docs/src/figures/simple_example.svg", transparent=true)
+end
+
 macro echo(expr)
     println(expr)
     :(@time $expr)
@@ -44,5 +82,6 @@ end
 @info "Documentation plots"
 mkpath("docs/src/figures")
 @echo logo()
+@echo simple_example()
 include("bspline_plots.jl")
 include("fd_plots.jl")
