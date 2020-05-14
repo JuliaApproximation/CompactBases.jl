@@ -45,3 +45,4 @@ end
 mkpath("docs/src/figures")
 @echo logo()
 include("bspline_plots.jl")
+include("fd_plots.jl")

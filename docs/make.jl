@@ -8,20 +8,26 @@ makedocs(;
     format=Documenter.HTML(assets = ["assets/latex.js"]),
     pages = [
         "Home" => "index.md",
-        "Theory" => "theory.md",
-        "Usage" => [
-            "Basis creation" => "usage.md",
-            "Knot sets" => "knot_sets.md",
-            "Splines" => [
-                "Spline creation & evaluation" => "splines.md",
-                "Function approximation" => "function_approximation.md",
+        "Finite-differences" => [
+            "Overview" => "fd_overview.md",
+            "Non-uniform grids" => "fd_non_uniform.md",
+        ],
+        "B-splines" => [
+            "Theory" => "theory.md",
+            "Usage" => [
+                "Basis creation" => "usage.md",
+                "Knot sets" => "knot_sets.md",
+                "Splines" => [
+                    "Spline creation & evaluation" => "splines.md",
+                    "Function approximation" => "function_approximation.md",
+                ],
+                "Approximating operators" => "operators.md",
+                "Examples" => [
+                    "Differentiating functions" => "differentiation.md",
+                    "Ordinary differential equations" => "odes.md",
+                    "Eigenproblems" => "eigenproblems.md"
+                ]
             ],
-            "Approximating operators" => "operators.md",
-            "Examples" => [
-                "Differentiating functions" => "differentiation.md",
-                "Ordinary differential equations" => "odes.md",
-                "Eigenproblems" => "eigenproblems.md"
-            ]
         ],
     ],
     repo="https://github.com/JuliaApproximation/CompactBases.jl/blob/{commit}{path}#L{line}",
