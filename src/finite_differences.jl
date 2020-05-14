@@ -58,9 +58,10 @@ function getindex(B::AbstractFiniteDifferences{T}, x::AbstractRange, sel::Abstra
         J = j - o
         δx = local_step(B, j)
         w = weight(B, j)
-        for i ∈ within_interval(x, x₀ - δx..x₀ + δx)
+        for i ∈ within_interval(x, a..c)
             χ[i,J] = w*tent(x[i], a, b, c)
         end
+        a,b = b,c
     end
     χ
 end
