@@ -5,7 +5,8 @@ isdefined(Main, :NOPLOTS) && NOPLOTS || include("plots.jl")
 DocMeta.setdocmeta!(CompactBases, :DocTestSetup, :(using CompactBases); recursive=true)
 makedocs(;
     modules=[CompactBases],
-    format=Documenter.HTML(assets = ["assets/latex.js"]),
+    format=Documenter.HTML(assets = ["assets/latex.js"],
+                           mathengine = Documenter.MathJax()),
     pages = [
         "Home" => "index.md",
         "Finite-differences" => [
