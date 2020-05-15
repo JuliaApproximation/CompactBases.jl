@@ -86,6 +86,21 @@ UniformScaling{Bool}
 true*I
 ```
 
+Since the step-size is changing for non-uniform grids,
+[`step`](@ref) is ill-defined, but returns unity to simplify the
+implementation of the differential operators (the coefficients are
+divided by `step(B)^k`, where `k` is the order of the differential;
+since that is already accounted for in the case of non-uniform grids
+by scaling the coefficients, `1^k` does not change the result):
+
+```jldoctest
+julia> step(B1)
+0.6060606060606061
+
+julia> step(B2)
+1.0
+```
+
 The node locations and weights are shown in the figure below:
 ![Non-uniform grid](figures/fd/compare_staggered_non_uniform_grid.svg)
 

@@ -291,6 +291,9 @@ distribution(::StaggeredFiniteDifferences) = NonUniform()
 locs(B::StaggeredFiniteDifferences) = B.r
 # step is only well-defined for uniform grids
 step(B::StaggeredFiniteDifferences{<:Any,<:AbstractRange}) = step(B.r)
+# All-the-same, we define step for non-uniform grids to make the
+# derivative stencils work properly.
+step(B::StaggeredFiniteDifferences{T}) where T = one(T)
 local_step(B::StaggeredFiniteDifferences, j) = local_step(B.r, j)
 weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
 weight(B::StaggeredFiniteDifferences, j) = 1/√(local_step(B, j))
