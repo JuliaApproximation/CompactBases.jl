@@ -1,6 +1,6 @@
 # * Derivatives
 
-function diffop!(dest::BandedMatrix,
+function diffop!(dest::AbstractMatrix,
                  L::BSplineOrRestricted, R::BSplineOrRestricted,
                  o)
     k = max(order(L),order(R))
@@ -30,7 +30,7 @@ diffop!(dest::BandedMatrix, B::BSplineOrRestricted, o) =
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
-    dest::BandedMatrix{T} -> begin
+    dest::AbstractMatrix{T} -> begin
         A = parent(Ac)
         parent(A) == parent(B) ||
             throw(ArgumentError("Cannot multiply functions on different grids"))
@@ -47,7 +47,7 @@ end
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
-    dest::BandedMatrix{T} -> begin
+    dest::AbstractMatrix{T} -> begin
         A = parent(Ac)
         parent(A) == parent(B) ||
             throw(ArgumentError("Cannot multiply functions on different grids"))
