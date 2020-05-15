@@ -23,7 +23,7 @@ struct FEDVR{T,R<:Real,O<:AbstractVector} <: Basis{T}
         t₀ = t[i₀]
 
         x = Vector{Vector{T}}()
-        w = Vector{Vector{T}}()
+        w = Vector{Vector{R}}()
         for i in eachindex(order)
             xw = element_grid(order[i], t[i], t[i+1], t₀, i ≥ i₀ ? eiϕ : one(T))
             push!(x, xw[1])

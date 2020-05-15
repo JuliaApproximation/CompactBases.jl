@@ -8,23 +8,23 @@ lerp(a::C,b::C,t::R) where {R<:Real,C<:Complex} = lerp(real(a),real(b),t) + im*l
 # * Gaußian quadrature
 
 """
-    change_interval!(x, w, xs, ws[, a=0, b=1])
+    change_interval!(xs, ws, x, w[, a=0, b=1, γ=1])
 
 Transform the Gaußian quadrature roots `x` and weights `w` on the
-elementary interval `[-1,1]` to the interval `[a,b]` and store the
-result in `xs` and `ws`, respectively.
-
+elementary interval `[-1,1]` to the interval `[γ*a,γ*b]` and store the
+result in `xs` and `ws`, respectively. `γ` is an optional root of
+unity, used to complex-rotate the roots (but not the weights).
 """
-function change_interval!(xs::AbstractVector{T}, ws::AbstractVector{T},
-                          x::AbstractVector, w::AbstractVector,
-                          a::T=zero(T), b::T=one(T)) where T
-    xs .= lerp.(a, b, (x .+ 1)/2)
+function change_interval!(xs::AbstractVector{T}, ws, x, w,
+                          a=zero(T), b=one(T), γ=one(T)) where T
+    xs .= lerp.(γ*a, γ*b, (x .+ 1)/2)
     ws .= (b-a)*w/2
     xs,ws
 end
 
-change_interval(x::AbstractVector{T}, w::AbstractVector{T}, a::T=zero(T), b::T=one(T)) where T =
-    change_interval!(similar(x), similar(w), x, w, a, b)
+change_interval(x::AbstractVector{T}, w::AbstractVector{T},
+                a=zero(T), b=one(T), γ::U=one(T)) where {T,U} =
+    change_interval!(similar(x,U), similar(w), x, w, a, b)
 
 # * Gauß–Legendre quadrature
 
@@ -80,6 +80,6 @@ end
 
 function element_grid(order, a::T, b::T, c::T=zero(T), eiϕ=one(T)) where T
     x,w = gausslobatto(order)
-    xs,ws = change_interval(x, w, eiϕ*(a-c), eiϕ*(b-c))
+    xs,ws = change_interval(x, w, a-c, b-c, eiϕ)
     c .+ xs, ws
 end

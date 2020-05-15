@@ -1,6 +1,19 @@
 using CompactBases
+import CompactBases: locs,
+    unrestricted_basis, restriction_extents
+
+using IntervalSets
+using QuasiArrays
+using ContinuumArrays
+import ContinuumArrays: ℵ₁, Inclusion
+
+using LinearAlgebra
+using BandedMatrices
+using BlockBandedMatrices
+using LazyArrays
+import LazyArrays: materialize
+
 using Test
 
-@testset "CompactBases.jl" begin
-    # Write your own tests here.
-end
+include("derivative_accuracy_utils.jl")
+include("fedvr/runtests.jl")
