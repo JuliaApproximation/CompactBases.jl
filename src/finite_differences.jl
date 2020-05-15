@@ -451,10 +451,11 @@ Base.:(*)(a::T,∂::ND) where {T<:Number,ND<:ImplicitDerivative} =
 Base.:(/)(∂::ND,a::T) where {T<:Number,ND<:ImplicitDerivative} =
     ∂ * inv(a)
 
-function LinearAlgebra.mul!(y::Y, ∂::ND, x::X) where {Y<:AbstractVector,
-                                                      ND<:ImplicitDerivative,
-                                                      X<:AbstractVector}
-    mul!(y, ∂.Δ, x)
+function LinearAlgebra.mul!(y::Y, ∂::ND, x::X,
+                            α::Number=true, β::Number=false) where {Y<:AbstractVector,
+                                                                    ND<:ImplicitDerivative,
+                                                                    X<:AbstractVector}
+    mul!(y, ∂.Δ, x, α, β)
     ldiv!(∂.M⁻¹, y)
     lmul!(∂.c, y)
     y
