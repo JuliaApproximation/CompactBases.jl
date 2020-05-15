@@ -190,11 +190,13 @@ IntervalSets.rightendpoint(B::FEDVR) = B.x[end]
 
 # * Basis functions
 
+# Evaluate basis function m of element i on a single coordinate x
 function getindex(B::FEDVR{T}, x::Real, i::Integer, m::Integer) where T
     (x < B.t[i] || x > B.t[i+1]) && return zero(T)
     xⁱ = @elem(B,x,i)
     χ = @elem(B,n,i)[m]
     x′ = complex_rotate(x, B)
+    # Replace with Fornberg interpolation?
     for j = 1:B.order[i]
         j == m && continue
         χ *= (x′ - xⁱ[j])/(xⁱ[m]-xⁱ[j])
@@ -205,16 +207,31 @@ end
 checkbounds(B::FEDVR{T}, x::Real, k::Integer) where T =
     x ∈ axes(B,1) && 1 ≤ k ≤ size(B,2) || throw(BoundsError())
 
-@inline function getindex(B::FEDVR{T}, x::Real, k::Integer) where T
-    # @boundscheck checkbounds(B, x, k) # Slow
-    i = 1
-    m = k
+"""
+   findelement(B::FEDVR, k[, i=1, m=k])
+
+Find the finite-element of `B` that contains the `k`th basis function,
+optionally starting the search from element `i` and basis function `m`
+of that element.
+"""
+function findelement(B::FEDVR, k, i=1, m=k)
+    k ∈ axes(B,2) || throw(BoundsError(B, k))
     while i < length(B.order) && m > B.order[i]
         m -= B.order[i] - 1
         i += 1
     end
+    i,m
+end
+
+# Evaluate a single basis function on a single coordinate
+@inline function getindex(B::FEDVR{T}, x::Real, k::Integer) where T
+    # @boundscheck checkbounds(B, x, k) # Slow
+    i,m = findelement(B, k)
     x < B.t[i] && return zero(T)
     if x > B.t[i+1]
+        # The last basis function of an element is also the first of
+        # the next element (the bridge function); if we are past the
+        # element boundary, move to next element.
         if i < length(B.t)-1 && m == B.order[i]
             i += 1
             m = 1
@@ -224,6 +241,61 @@ checkbounds(B::FEDVR{T}, x::Real, k::Integer) where T =
     end
     B[x,i,m]
 end
+
+# Evaluate a specific basis function in a specific element on all
+# coordinates in x.
+function basis_function!(χ, B::FEDVR{T}, x::AbstractVector, i, m) where T
+    for j ∈ findall(in(B.t[i]..B.t[i+1]), x)
+        χ[j] = B[x[j],i,m]
+    end
+    χ
+end
+
+# Evaluate a selection of basis functions on all coordinates in x
+function getindex(B::FEDVR{T}, x::AbstractVector, sel::AbstractVector) where T
+    nj = length(sel)
+    χ = spzeros(T, length(x), nj)
+
+    j = 1
+    ni = length(B.t)-1
+    i,m = findelement(B, sel[1])
+    imax,mmax = findelement(B, sel[end])
+
+    while j ≤ nj
+        basis_function!(view(χ, :, j), B, x, i, m)
+
+        m += 1
+        if m > B.order[i] && i < ni
+            i += 1
+            m = 1
+        else
+            j += 1
+        end
+    end
+
+    χ
+end
+
+# Evaluate a single basis function on all the coordinates in x
+function getindex(B::FEDVROrRestricted{T}, x::AbstractVector, j::Integer) where T
+    χ = spzeros(T, length(x))
+    i,m = findelement(parent(B), j+first(indices(B,2))-1)
+    basis_function!(χ, parent(B), x, i, m)
+
+    # If basis function j is a bridge function between elements i and
+    # i+1, also evaluate its contribution in the next element
+    pB = parent(B)
+    i < length(pB.t)-1 && m == pB.order[i] &&
+        basis_function!(χ, parent(B), x, i+1, 1)
+
+    χ
+end
+
+getindex(B::FEDVROrRestricted, x::AbstractVector, ::Colon) =
+    getindex(parent(B), x, indices(B,2))
+
+getindex(B::RestrictedFEDVR, x::AbstractVector, sel::AbstractVector) =
+    getindex(parent(B), x, indices(B,2)[sel])
 
 # * Types
 

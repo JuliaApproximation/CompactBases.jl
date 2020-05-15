@@ -188,7 +188,7 @@ getindex(B::BSpline{T}, x::Real, j::Integer) where T =
     deBoor(B.t, UnitVector{T}(size(B,2), j),
            x, find_interval(B.t, x))
 
-function basis_function!(χ, B::BSpline{T}, x::AbstractRange, j) where T
+function basis_function!(χ, B::BSpline{T}, x::AbstractVector, j) where T
     eⱼ = UnitVector{T}(size(B,2), j)
     for (is,k) ∈ within_support(x, B.t, j)
         for i in is
@@ -197,22 +197,26 @@ function basis_function!(χ, B::BSpline{T}, x::AbstractRange, j) where T
     end
 end
 
-function getindex(B::BSpline{T}, x::AbstractRange, sel::AbstractVector) where T
+function getindex(B::BSpline{T}, x::AbstractVector, sel::AbstractVector) where T
     χ = spzeros(T, length(x), length(sel))
+    o = sel[1] - 1
     for j in sel
-        basis_function!(view(χ, :, j), B, x, j)
+        basis_function!(view(χ, :, j-o), B, x, j)
     end
     χ
 end
 
-function getindex(B::BSpline{T}, x::AbstractRange, j::Integer) where T
+function getindex(B::BSplineOrRestricted{T}, x::AbstractVector, j::Integer) where T
     χ = spzeros(T, length(x))
-    basis_function!(χ, B, x, j)
+    basis_function!(χ, parent(B), x, j+first(indices(B,2))-1)
     χ
 end
 
 getindex(B::BSplineOrRestricted, x, ::Colon) =
-    getindex(B, x, axes(B,2))
+    getindex(parent(B), x, indices(B,2))
+
+getindex(B::BSplineOrRestricted, x::AbstractVector, sel::AbstractVector) =
+    getindex(parent(B), x, indices(B,2)[sel])
 
 # * Types
 

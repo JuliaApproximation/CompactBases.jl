@@ -134,7 +134,7 @@ julia> LinearKnotSet(3, 0, 1, 3, 1, 1)[2]
 
 """
 function getindex(t::AbstractKnotSet{k,ml,mr}, i::Integer) where {k,ml,mr}
-    i < 1 && throw(BoundsError("Trying to access knot set of length $(length(t)) at index $i"))
+    i < 1 && throw(BoundsError(t, i))
 
     ni = numintervals(t)
     if i < ml
@@ -223,7 +223,7 @@ support of the `j`th basis function (enumerated `1..n`), given the
 knot set `t`. For each index of `x` that is covered, the index `k` of
 the interval within which `x[i]` falls is also returned.
 """
-function within_support(x::AbstractRange, t::AbstractKnotSet, j::Integer)
+function within_support(x::AbstractVector, t::AbstractKnotSet, j::Integer)
     isempty(x) && return 1:0
     k = order(t)
     # The last interval includes the right endpoint as well, whereas
@@ -231,7 +231,7 @@ function within_support(x::AbstractRange, t::AbstractKnotSet, j::Integer)
     IntervalKind(i) = i == numintervals(t) ? ClosedInterval : RightContinuous
     ml = leftmultiplicity(t)
     # @show j, j:j+k-1
-    supports = [(within_interval(x, IntervalKind(i-ml+1)(t[i], t[i+1])), i)
+    supports = [(findall(in(IntervalKind(i-ml+1)(t[i], t[i+1])), x), i)
                 for i = j:j+k-1]
     filter(s -> !isempty(s[1]), supports)
 end

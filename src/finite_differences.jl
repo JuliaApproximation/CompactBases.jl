@@ -43,7 +43,7 @@ getindex(B::AbstractFiniteDifferences, x::Real, i::Integer) =
 step(B::RestrictedFiniteDifferences) = step(parent(B))
 local_step(B::RestrictedFiniteDifferences, i) = local_step(parent(B), j+first(indices(B,2))-1)
 
-function getindex(B::AbstractFiniteDifferences{T}, x::AbstractRange, sel::AbstractVector) where T
+function getindex(B::AbstractFiniteDifferences{T}, x::AbstractVector, sel::AbstractVector) where T
     l = locs(B)
     χ = spzeros(T, length(x), length(sel))
     o = sel[1] - 1
@@ -58,7 +58,7 @@ function getindex(B::AbstractFiniteDifferences{T}, x::AbstractRange, sel::Abstra
         J = j - o
         δx = local_step(B, j)
         w = weight(B, j)
-        for i ∈ within_interval(x, a..c)
+        for i ∈ findall(in(a..c), x)
             χ[i,J] = w*tent(x[i], a, b, c)
         end
         a,b = b,c
@@ -66,10 +66,10 @@ function getindex(B::AbstractFiniteDifferences{T}, x::AbstractRange, sel::Abstra
     χ
 end
 
-getindex(B::FiniteDifferencesOrRestricted, x::AbstractRange, ::Colon) =
+getindex(B::FiniteDifferencesOrRestricted, x::AbstractVector, ::Colon) =
     getindex(parent(B), x, indices(B,2))
 
-getindex(B::RestrictedFiniteDifferences, x::AbstractRange, sel::AbstractVector) =
+getindex(B::RestrictedFiniteDifferences, x::AbstractVector, sel::AbstractVector) =
     getindex(parent(B), x, indices(B,2)[sel])
 
 # * Types

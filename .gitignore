@@ -3,7 +3,6 @@
 *.jl.mem
 .DS_Store
 ltximg
-/Manifest.toml
 /dev/
 /docs/build/
 /docs/site/
