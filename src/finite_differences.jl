@@ -234,6 +234,24 @@ struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B} <: AbstractFiniteD
     δβ₁::T # Correction used for bare Coulomb potentials, Eq. (22) Schafer2009
     α::A
     β::B
+
+    function StaggeredFiniteDifferences(r::V, Z=one(T),
+                                        δβ₁=schafer_corner_fix(local_step(r,1), Z)) where {T,V<:AbstractRange{T}}
+        issorted(r) ||
+            throw(ArgumentError("Node locations must be non-decreasing"))
+
+        N = length(r)
+        j = one(T):N
+        j² = j .^ 2
+        # Eq. (20), Schafer 2000
+        α = (j² ./ (j² .- one(T)/4))[1:N-1]
+        β = (j² .- j .+ one(T)/2) ./ (j² .- j .+ one(T)/4)
+
+        β[1] += δβ₁ * step(r)^2
+
+        new{T,V,typeof(α),typeof(β)}(r, T(Z), T(δβ₁), α, β)
+    end
+
     function StaggeredFiniteDifferences(r::V, Z=one(T),
                                         δβ₁=schafer_corner_fix(local_step(r,1), Z)) where {T,V<:AbstractVector{T}}
         issorted(r) ||
@@ -247,19 +265,21 @@ struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B} <: AbstractFiniteD
         a = 2r[1]-r[2]
         b,c,d = r[1],r[2],r[3]
 
-        β[1] = δβ₁
-
         for j = 1:N
             if j < N
                 d = r̃[j+2]
+                # Eq. (A13) Krause 1999
                 α[j] = 2/((c-b)*√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
             end
 
-            β[j] += 1/(c-a)*(1/(c-b)*((c+b)/2b)^2 +
-                             1/(b-a)*((b+a)/2b)^2)
+            # Eq. (A14) Krause 1999
+            β[j] = 1/(c-a)*(1/(c-b)*((c+b)/2b)^2 +
+                            1/(b-a)*((b+a)/2b)^2)
 
             a,b,c = b,c,d
         end
+
+        β[1] += δβ₁
 
         new{T,V,typeof(α),typeof(β)}(r, T(Z), T(δβ₁), α, β)
     end
