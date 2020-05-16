@@ -3,14 +3,13 @@ const RestrictedFiniteDifferences{T,B<:AbstractFiniteDifferences{T}} =
     RestrictedQuasiArray{T,2,B}
 const FiniteDifferencesOrRestricted = BasisOrRestricted{<:AbstractFiniteDifferences}
 
-abstract type NodeDistribution end
-struct Uniform <: NodeDistribution end
-struct NonUniform <: NodeDistribution end
-
 eltype(::AbstractFiniteDifferences{T}) where T = T
 
 axes(B::AbstractFiniteDifferences{T}) where T = (Inclusion(leftendpoint(B)..rightendpoint(B)), Base.OneTo(length(locs(B))))
 size(B::AbstractFiniteDifferences) = (ℵ₁, length(locs(B)))
+
+distribution(B::AbstractFiniteDifferences) = distribution(locs(B))
+
 """
     local_step(B, i)
 
@@ -74,16 +73,16 @@ getindex(B::RestrictedFiniteDifferences, x::AbstractVector, sel::AbstractVector)
 
 # * Types
 
-const FDArray{T,N,B<:FiniteDifferencesOrRestricted} = MulQuasiArray{T,N,<:Tuple{<:B,<:AbstractArray{T,N}}}
-const FDVector{T,B} = FDArray{T,1,B}
-const FDMatrix{T,B} = FDArray{T,2,B}
-const FDVecOrMat{T,B} = Union{FDVector{T,B},FDMatrix{T,B}}
+const FDArray{T,N,B<:FiniteDifferencesOrRestricted} = MulQuasiArray{T,N,<:Tuple{B,<:AbstractArray{T,N}}}
+const FDVector{T,B<:FiniteDifferencesOrRestricted} = FDArray{T,1,B}
+const FDMatrix{T,B<:FiniteDifferencesOrRestricted} = FDArray{T,2,B}
+const FDVecOrMat{T,B<:FiniteDifferencesOrRestricted} = Union{FDVector{T,B},FDMatrix{T,B}}
 
 const AdjointFDArray{T,N,B<:FiniteDifferencesOrRestricted} = MulQuasiArray{T,<:Any,<:Tuple{<:Adjoint{T,<:AbstractArray{T,N}},
                                                                                            <:QuasiAdjoint{T,<:B}}}
-const AdjointFDVector{T,B} = AdjointFDArray{T,1,B}
-const AdjointFDMatrix{T,B} = AdjointFDArray{T,2,B}
-const AdjointFDVecOrMat{T,B} = Union{AdjointFDVector{T,B},AdjointFDMatrix{T,B}}
+const AdjointFDVector{T,B<:FiniteDifferencesOrRestricted} = AdjointFDArray{T,1,B}
+const AdjointFDMatrix{T,B<:FiniteDifferencesOrRestricted} = AdjointFDArray{T,2,B}
+const AdjointFDVecOrMat{T,B<:FiniteDifferencesOrRestricted} = Union{AdjointFDVector{T,B},AdjointFDMatrix{T,B}}
 
 # This is an operator on the form O = B*M*B⁻¹, where M is a matrix
 # acting on the expansion coefficients. When applied to e.g. a
@@ -115,10 +114,7 @@ const LazyFDInnerProduct{FD<:FiniteDifferencesOrRestricted} = Mul{<:Any,<:Tuple{
 # * Mass matrix
 
 @simplify function *(Ac::QuasiAdjoint{<:Any,<:FiniteDifferencesOrRestricted}, B::FiniteDifferencesOrRestricted)
-    A = parent(Ac)
-    parent(A) == parent(B) ||
-        throw(ArgumentError("Cannot multiply functions on different grids"))
-    I*step(B)
+    step(B)*combined_restriction(parent(Ac),B)
 end
 
 # * Basis inverses
@@ -305,14 +301,11 @@ open interval `(0,rₘₐₓ)` with `n` grid points.
         StaggeredFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, rₘₐₓ), args...)
 end
 
-distribution(::StaggeredFiniteDifferences{<:Any,<:AbstractRange}) = Uniform()
-distribution(::StaggeredFiniteDifferences) = NonUniform()
-
 locs(B::StaggeredFiniteDifferences) = B.r
 # step is only well-defined for uniform grids
 step(B::StaggeredFiniteDifferences{<:Any,<:AbstractRange}) = step(B.r)
-# All-the-same, we define step for non-uniform grids to make the
-# derivative stencils work properly.
+# All-the-same, we define step for non-uniform grids to make the mass
+# matrix and derivative stencils work properly.
 step(B::StaggeredFiniteDifferences{T}) where T = one(T)
 local_step(B::StaggeredFiniteDifferences, j) = local_step(B.r, j)
 weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
@@ -328,21 +321,6 @@ show(io::IO, B::StaggeredFiniteDifferences{T}) where T =
 
 show(io::IO, B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T =
     write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by ρ = $(step(B))")
-
-_mass_matrix(::Uniform, B::StaggeredFiniteDifferences) = I*step(B)
-# In the non-uniform case, the integration measure <=> quadrature
-# weight varies throughout the domain, and is baked into the
-# coefficients.
-_mass_matrix(::NonUniform, B::StaggeredFiniteDifferences) = I
-
-@simplify function *(Ac::QuasiAdjoint{<:Any,<:BasisOrRestricted{<:StaggeredFiniteDifferences}},
-                     B::BasisOrRestricted{<:StaggeredFiniteDifferences})
-    A = parent(Ac)
-    pB = parent(B)
-    parent(A) == pB ||
-        throw(ArgumentError("Cannot multiply functions on different grids"))
-    _mass_matrix(distribution(pB), pB)
-end
 
 # ** Implicit finite differences
 #=

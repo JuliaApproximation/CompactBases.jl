@@ -67,6 +67,8 @@ axes(B::FEDVR) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(length(B.x)))
 size(B::FEDVR) = (ℵ₁, length(B.x))
 ==(A::FEDVR,B::FEDVR) = A.t == B.t && A.order == B.order
 
+distribution(B::FEDVR) = distribution(B.t)
+
 order(B::FEDVR) = B.order
 order(B::RestrictedFEDVR) = order(parent(B))[elements(B)]
 order(B::FEDVROrRestricted, i) = order(parent(B))[i]
@@ -312,45 +314,8 @@ const AdjointFEDVRVecOrMat{T,B<:FEDVROrRestricted} = Union{AdjointFEDVRVector{T,
 
 # * Mass matrix
 
-@simplify function *(Ac::QuasiAdjoint{<:Any,<:FEDVR}, B::FEDVR)
-    A = parent(Ac)
-    A == B || throw(ArgumentError("Cannot multiply incompatible FEDVR expansions"))
-    I
-end
-
-# A & B restricted
-@simplify function *(Ac::AdjointRestrictedFEDVR, B::RestrictedFEDVR)
-    # This is mainly for type-stability; it would be trivial to
-    # generate the proper restriction matrix from the combination of
-    # two differently restricted bases, but we would like to have
-    # UniformScaling as the result if they are equal, and this has
-    # higher priority. On the other hand, you typically only compute
-    # the mass matrix in the beginning of the calculation, and thus
-    # type-instability is not a big problem, so this behaviour may
-    # change in the future.
-    reverse(axes(Ac)) == axes(B) || throw(DimensionMismatch("axes must be same"))
-    A = parent(Ac)
-    parent(A) == parent(B) || throw(ArgumentError("Cannot multiply incompatible FEDVR expansions"))
-
-    I
-end
-
-function materialize(M::Mul{<:Any,<:Tuple{<:QuasiAdjoint{T,<:FEDVR{T}},
-                                          <:RestrictedFEDVR{T}}}) where T
-    Ac,B = M.args
-    axes(Ac,2) == axes(B,1) || throw(DimensionMismatch("axes must be same"))
-    A = parent(Ac)
-    A == parent(B) || throw(ArgumentError("Cannot multiply incompatible FEDVR expansions"))
-    restriction(B)
-end
-
-function materialize(M::Mul{<:Any,<:Tuple{<:AdjointRestrictedFEDVR{T},
-                                          <:FEDVR{T}}}) where T
-    Ac,B = M.args
-    axes(Ac,2) == axes(B,1) || throw(DimensionMismatch("axes must be same"))
-    A = parent(Ac)
-    parent(A) == B || throw(ArgumentError("Cannot multiply incompatible FEDVR expansions"))
-    restriction(A)'
+@simplify function *(Ac::QuasiAdjoint{<:Any,<:FEDVROrRestricted}, B::FEDVROrRestricted)
+    one(eltype(B))*combined_restriction(parent(Ac),B)
 end
 
 # * Basis inverses

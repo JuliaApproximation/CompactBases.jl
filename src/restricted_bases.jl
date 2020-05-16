@@ -24,7 +24,14 @@ function restriction_extents(B̃::RestrictedQuasiArray)
     a-1,size(B,2)-b
 end
 
+restriction(B) = Diagonal(Ones{Int}(size(B,2)))
 restriction(B̃::RestrictedQuasiArray) = last(LazyArrays.arguments(B̃))
+
+function combined_restriction(A,B)
+    parent(A) == parent(B) ||
+        throw(ArgumentError("Cannot multiply functions on different grids"))
+    restriction(A)'*restriction(B)
+end
 
 function show(io::IO, B̃::RestrictedQuasiArray{<:Any,2})
     B = parent(B̃)
@@ -41,3 +48,5 @@ IntervalSets.rightendpoint(B::RestrictedQuasiArray) =
 
 locs(B::RestrictedQuasiArray) = locs(parent(B))[indices(B,2)]
 real_locs(B::RestrictedQuasiArray) = real_locs(parent(B))[indices(B,2)]
+
+distribution(B::RestrictedQuasiArray) = distribution(parent(B))

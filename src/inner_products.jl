@@ -1,19 +1,18 @@
-# * FD Norms
+# * Norms
+
+const FDOrFEDVRVecOrMat = Union{FDVecOrMat,
+                                Mul{<:Any, <:Tuple{<:FiniteDifferencesOrRestricted, <:AbstractArray}},
+                                FEDVRVecOrMat,
+                                Mul{<:Any, <:Tuple{<:FEDVROrRestricted, <:AbstractArray}}}
 
 _norm(B::FiniteDifferencesOrRestricted, c::AbstractArray, p::Real=2) =
     norm(c, p)*(step(B)^(inv(p)))
 
-LinearAlgebra.norm(v::FDVecOrMat, p::Real=2) = _norm(v.args..., p)
-LinearAlgebra.norm(v::Mul{<:Any, <:Tuple{<:FiniteDifferencesOrRestricted, <:AbstractArray}},
-                   p::Real=2) = _norm(v.args..., p)
+_norm(R::FEDVROrRestricted, ϕ::AbstractArray, p::Real=2) = norm(ϕ, p)
 
-function LinearAlgebra.normalize!(v::FDVecOrMat, p::Real=2)
-    v.args[2][:] /= norm(v,p)
-    v
-end
+LinearAlgebra.norm(v::FDOrFEDVRVecOrMat, p::Real=2) = _norm(v.args..., p)
 
-function LinearAlgebra.normalize!(v::Mul{<:Any, <:Tuple{<:FiniteDifferencesOrRestricted, <:AbstractArray}},
-                                  p::Real=2)
+function LinearAlgebra.normalize!(v::FDOrFEDVRVecOrMat, p::Real=2)
     v.args[2][:] /= norm(v,p)
     v
 end
@@ -59,25 +58,6 @@ function LazyArrays.materialize(s::Mul{<:Any, <:Tuple{
     v*step(first(b.args))
 end
 
-
-# * FE-DVR Norms
-
-_norm(R::FEDVROrRestricted, ϕ::AbstractArray, p::Real=2) = norm(ϕ, p)
-
-LinearAlgebra.norm(v::FEDVRVecOrMat, p::Real=2) = _norm(v.args..., p)
-LinearAlgebra.norm(v::Mul{<:Any, <:Tuple{<:FEDVROrRestricted, <:AbstractArray}},
-                   p::Real=2) = _norm(v.args..., p)
-
-function LinearAlgebra.normalize!(v::FEDVRVecOrMat, p::Real=2)
-    v.args[2][:] /= norm(v, p)
-    v
-end
-
-function LinearAlgebra.normalize!(v::Mul{<:Any, <:Tuple{<:FEDVROrRestricted, <:AbstractArray}},
-                                  p::Real=2)
-    v.args[2][:] /= norm(v, p)
-    v
-end
 
 # * FE-DVR Inner products
 

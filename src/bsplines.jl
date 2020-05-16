@@ -117,6 +117,8 @@ axes(B::BSpline) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(numfunctions(B.
 size(B::BSpline) = (ℵ₁, numfunctions(B.t))
 ==(A::BSpline,B::BSpline) = A.t == B.t
 
+distribution(B::BSpline) = distribution(B.t)
+
 order(B::BSplineOrRestricted) = order(unrestricted_basis(B).t)
 
 function show(io::IO, B::BSpline{T}) where T
@@ -224,6 +226,12 @@ const SplineArray{T,N,B<:BSplineOrRestricted} = MulQuasiArray{T,N,<:Mul{<:Any,<:
 const SplineVector{T,B<:BSplineOrRestricted} = SplineArray{T,1,B}
 const SplineMatrix{T,B<:BSplineOrRestricted} = SplineArray{T,2,B}
 const SplineVecOrMat{T,B<:BSplineOrRestricted} = Union{SplineVector{T,B},SplineMatrix{T,B}}
+
+const AdjointSplineArray{T,N,B<:BSplineOrRestricted} = MulQuasiArray{T,<:Any,<:Tuple{<:Adjoint{T,<:AbstractArray{T,N}},
+                                                                                           <:QuasiAdjoint{T,<:B}}}
+const AdjointSplineVector{T,B<:BSplineOrRestricted} = AdjointSplineArray{T,1,B}
+const AdjointSplineMatrix{T,B<:BSplineOrRestricted} = AdjointSplineArray{T,2,B}
+const AdjointSplineVecOrMat{T,B<:BSplineOrRestricted} = Union{AdjointSplineVector{T,B},AdjointSplineMatrix{T,B}}
 
 Base.show(io::IO, spline::SplineVector) =
     write(io, "Spline on $(spline.args[1])")

@@ -33,7 +33,7 @@ function compare_staggered_non_uniform()
             xlabel("Node index")
         end
     end
-    savefig("docs/src/figures/fd/compare_staggered_non_uniform_grid.svg")
+    savedocfig("fd/compare_staggered_non_uniform_grid")
 
     ξ = 10.0 .^ range(-3, stop=log10(25), length=1000)
     χ1 = B1[ξ, :]
@@ -49,7 +49,7 @@ function compare_staggered_non_uniform()
             ylabel("Non-uniform")
         end
     end
-    savefig("docs/src/figures/fd/compare_staggered_non_uniform_basis.svg")
+    savedocfig("fd/compare_staggered_non_uniform_basis")
 
     f = x -> sin(2π*x/rmax)*exp(-4x/rmax)
 
@@ -79,7 +79,7 @@ function compare_staggered_non_uniform()
             xlabel(L"x")
         end
     end
-    savefig("docs/src/figures/fd/compare_staggered_non_uniform_reconstruction.svg")
+    savedocfig("fd/compare_staggered_non_uniform_reconstruction")
 end
 
 mkpath("docs/src/figures/fd")

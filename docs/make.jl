@@ -9,24 +9,26 @@ makedocs(;
                            mathengine = Documenter.MathJax()),
     pages = [
         "Home" => "index.md",
+        "Overview" => "overview.md",
+        "Inner products & norms" => "inner_products.md",
         "Finite-differences" => [
             "Overview" => "fd_overview.md",
             "Non-uniform grids" => "fd_non_uniform.md",
         ],
         "B-splines" => [
-            "Theory" => "theory.md",
+            "Theory" => "bsplines/theory.md",
             "Usage" => [
-                "Basis creation" => "usage.md",
-                "Knot sets" => "knot_sets.md",
+                "Basis creation" => "bsplines/usage.md",
+                "Knot sets" => "bsplines/knot_sets.md",
                 "Splines" => [
-                    "Spline creation & evaluation" => "splines.md",
-                    "Function approximation" => "function_approximation.md",
+                    "Spline creation & evaluation" => "bsplines/splines.md",
+                    "Function approximation" => "bsplines/function_approximation.md",
                 ],
-                "Approximating operators" => "operators.md",
+                "Approximating operators" => "bsplines/operators.md",
                 "Examples" => [
-                    "Differentiating functions" => "differentiation.md",
-                    "Ordinary differential equations" => "odes.md",
-                    "Eigenproblems" => "eigenproblems.md"
+                    "Differentiating functions" => "bsplines/differentiation.md",
+                    "Ordinary differential equations" => "bsplines/odes.md",
+                    "Eigenproblems" => "bsplines/eigenproblems.md"
                 ]
             ],
         ],

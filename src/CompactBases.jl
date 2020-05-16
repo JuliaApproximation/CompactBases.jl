@@ -30,6 +30,7 @@ using FastGaussQuadrature
 using Formatting
 using RecipesBase
 
+include("distributions.jl")
 include("restricted_bases.jl")
 include("unit_vectors.jl")
 include("intervals.jl")

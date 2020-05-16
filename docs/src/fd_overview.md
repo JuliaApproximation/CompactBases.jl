@@ -18,11 +18,11 @@ implemented:
   - Schafer, K. J., Gaarde, M. B., Kulander, K. C., Sheehy, B., &
       DiMauro, L. F. (2000). Calculations of Strong Field Multiphoton
       Processes in Alkali Metal Atoms. AIP Conference Proceedings, 525(1),
-      45–58. http://dx.doi.org/10.1063/1.1291925
+      45–58. <http://dx.doi.org/10.1063/1.1291925>
 
   - Krause, J. L., & Schafer, K. J. (1999). Control of THz Emission from
       Stark Wave Packets. The Journal of Physical Chemistry A, 103(49),
-      10118–10125. http://dx.doi.org/10.1021/jp992144
+      10118–10125. <http://dx.doi.org/10.1021/jp992144>
 
   - Koonin, S. E., & Meredith, D. C. (1990). Computational Physics,
       FORTRAN Version. Reading, Mass: Addison-Wesley.
@@ -37,10 +37,10 @@ implemented:
 
   - Lele, S. K. (1992). Compact Finite Difference Schemes With
     Spectral-Like Resolution. Journal of Computational Physics, 103(1),
-    16–42. http://dx.doi.org/10.1016/0021-9991(92)90324-r
+    16–42. <http://dx.doi.org/10.1016/0021-9991(92)90324-r>
 
   - Muller, H. G. (1999). An Efficient Propagation Scheme for the
-    Time-Dependent Schr\"odinger equation in the Velocity Gauge. Laser
+    Time-Dependent Schrödinger equation in the Velocity Gauge. Laser
     Physics, 9(1), 138–148.
 
 ## Boundary conditions

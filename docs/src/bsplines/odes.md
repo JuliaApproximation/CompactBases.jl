@@ -29,7 +29,7 @@ force is antisymmetric and that $V(0)=0$, and solve the problem on the
 half-domain $[0,x_{\textrm{max}}]$. This turns the problem into an
 initial-value problem.
 
-We proceed as indicted in [Solving equations](@ref):
+We proceed as indicated in [Solving equations](@ref):
 
 ```julia
 julia> function ode_hookes_law(xₘₐₓ, kspring, k, N)
@@ -62,7 +62,7 @@ $$\begin{equation}
 V(x) = \frac{kx^2}{2}.
 \end{equation}$$
 
-![Hooke's law and harmonic potential](figures/hookes-law-7-30.svg)
+![Hooke's law and harmonic potential](/figures/bsplines/hookes-law-7-30.svg)
 
 _However_, since the restoring force is linear, the potential can at
 most be quadratic; furthermore, we only need one interval to solve the
@@ -73,7 +73,7 @@ julia> cF,cV = ode_hookes_law(3, 0.1, 3, 1)
 ([-0.15, -0.3], [0.0, 0.45])
 ```
 
-![Hooke's law and harmonic potential](figures/hookes-law-3-1.svg)
+![Hooke's law and harmonic potential](/figures/bsplines/hookes-law-3-1.svg)
 
 !!! note
 

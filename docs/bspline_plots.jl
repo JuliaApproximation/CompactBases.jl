@@ -32,7 +32,7 @@ function cardinal_splines()
         end
         xlabel(L"x")
     end
-    savefig("docs/src/figures/cardinal-splines.svg")
+    savedocfig("bsplines/cardinal-splines")
 end
 
 function discontinuous_splines()
@@ -53,7 +53,7 @@ function discontinuous_splines()
             ylabel("Multiplicity")
         end
     end
-    savefig("docs/src/figures/discontinuous-splines.svg")
+    savedocfig("bsplines/discontinuous-splines")
 end
 
 function full_multiplicity_splines()
@@ -77,7 +77,7 @@ function full_multiplicity_splines()
         end
         xlabel(L"x")
     end
-    savefig("docs/src/figures/full-multiplicity-splines.svg")
+    savedocfig("bsplines/full-multiplicity-splines")
 end
 
 function spline1d()
@@ -113,7 +113,7 @@ function spline1d()
         end
     end
 
-    savefig("docs/src/figures/spline-1d.svg")
+    savedocfig("bsplines/spline-1d")
 end
 
 function spline2d()
@@ -135,7 +135,7 @@ function spline2d()
         margins(0.1,0.1)
     end
 
-    savefig("docs/src/figures/spline-2d.svg")
+    savedocfig("bsplines/spline-2d")
 end
 
 function quadrature_points()
@@ -170,7 +170,7 @@ function quadrature_points()
             ylabel(L"w_i")
         end
     end
-    savefig("docs/src/figures/quadrature-points.svg")
+    savedocfig("bsplines/quadrature-points")
 end
 
 function function_interpolation()
@@ -195,7 +195,7 @@ function function_interpolation()
             xlabel(L"x")
         end
     end
-    savefig("docs/src/figures/function-interpolation.svg")
+    savedocfig("bsplines/function-interpolation")
 end
 
 function restricted_basis_interpolation()
@@ -260,7 +260,7 @@ function restricted_basis_interpolation()
             xlabel(L"x")
         end
     end
-    savefig("docs/src/figures/restricted-basis-interpolation.svg")
+    savedocfig("bsplines/restricted-basis-interpolation")
 end
 
 function smooth_interpolation()
@@ -291,7 +291,7 @@ function smooth_interpolation()
         plot(r, f.(r), "--", label=L"\sin(2\pi x)")
         legend()
     end
-    savefig("docs/src/figures/smooth-interpolation.svg")
+    savedocfig("bsplines/smooth-interpolation")
 end
 
 function diagonal_operators()
@@ -346,7 +346,7 @@ function diagonal_operators()
             end
         end
     end
-    savefig("docs/src/figures/diagonal-operators.svg")
+    savedocfig("bsplines/diagonal-operators")
 end
 
 function find_second_derivative(B, f::Function)
@@ -397,7 +397,7 @@ function sine_derivative()
             xlabel(L"x")
         end
     end
-    savefig("docs/src/figures/sine-derivative.svg")
+    savedocfig("bsplines/sine-derivative")
 end
 
 function ode_hookes_law(xₘₐₓ, kspring, k, N)
@@ -452,7 +452,7 @@ function ode_hookes_law(xₘₐₓ, kspring, k, N)
             xlabel(L"x")
         end
     end
-    savefig("docs/src/figures/hookes-law-$(k)-$(N).svg")
+    savedocfig("bsplines/hookes-law-$(k)-$(N)")
 end
 
 struct ShiftAndInvert{TA,TB,TT}
@@ -538,9 +538,10 @@ function hydrogen_eigenstates()
             end
         end
     end
-    savefig("docs/src/figures/hydrogen-eigenstates.svg")
+    savedocfig("bsplines/hydrogen-eigenstates")
 end
 
+mkpath("docs/src/figures/bsplines")
 @echo cardinal_splines()
 @echo discontinuous_splines()
 @echo full_multiplicity_splines()

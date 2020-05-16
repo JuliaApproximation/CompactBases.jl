@@ -22,6 +22,14 @@ lerp(a,b,t) = (1-t)*a + t*b
 
 mean_position(x, ϕ) = ϕ'*Diagonal(x)*ϕ/(ϕ'ϕ)
 
+function savedocfig(name,dir="figures")
+    fig = gcf()
+    savefig(joinpath("docs/src",dir,"$(name).svg"),
+            transparent=true,
+            facecolor=fig.get_facecolor())
+    close(fig)
+end
+
 function logo()
     t = ArbitraryKnotSet(3, [0.0, 1, 1, 3, 4, 6], 1, 3)
     r = range(first(t), stop=last(t), length=301)
@@ -71,7 +79,28 @@ function simple_example()
             end
         end
     end
-    savefig("docs/src/figures/simple_example.svg", transparent=true)
+    savedocfig("simple_example")
+end
+
+function restricted_bases()
+    B = FEDVR(range(0, stop=10.0, length=5), 7)
+    B̃ = B[:, 3:17]
+
+    x = range(0, stop=10.0, length=1000)
+    χ = B[x, :]
+    χ̃ = B̃[x, :]
+
+    cfigure("restricted bases") do
+        csubplot(211,nox=true) do
+            plot(x, χ)
+            ylabel("Original basis")
+        end
+        csubplot(212) do
+            plot(x, χ̃)
+            ylabel("Restricted basis")
+        end
+    end
+    savedocfig("restricted_bases")
 end
 
 macro echo(expr)
@@ -83,5 +112,6 @@ end
 mkpath("docs/src/figures")
 @echo logo()
 @echo simple_example()
+@echo restricted_bases()
 include("bspline_plots.jl")
 include("fd_plots.jl")
