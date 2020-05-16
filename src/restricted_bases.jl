@@ -33,6 +33,18 @@ function combined_restriction(A,B)
     restriction(A)'*restriction(B)
 end
 
+function combined_restriction_selection(A,B)
+    parent(A) == parent(B) ||
+        throw(ArgumentError("Cannot multiply functions on different grids"))
+
+    la,lb = restriction_extents(A)
+    ra,rb = restriction_extents(B)
+
+    lsel = 1+ra:(size(A,2)-max(0,rb-lb))
+    rsel = 1+la:(size(B,2)-max(0,lb-rb))
+    lsel, rsel
+end
+
 function show(io::IO, B̃::RestrictedQuasiArray{<:Any,2})
     B = parent(B̃)
     a,b = B̃.indices[2][[1,end]]

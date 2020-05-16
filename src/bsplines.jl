@@ -222,16 +222,15 @@ getindex(B::BSplineOrRestricted, x::AbstractVector, sel::AbstractVector) =
 
 # * Types
 
-const SplineArray{T,N,B<:BSplineOrRestricted} = MulQuasiArray{T,N,<:Mul{<:Any,<:Tuple{B,<:AbstractArray{T,N}}}}
-const SplineVector{T,B<:BSplineOrRestricted} = SplineArray{T,1,B}
-const SplineMatrix{T,B<:BSplineOrRestricted} = SplineArray{T,2,B}
-const SplineVecOrMat{T,B<:BSplineOrRestricted} = Union{SplineVector{T,B},SplineMatrix{T,B}}
+const SplineArray{T,N,B<:BSplineOrRestricted} = FuncArray{T,N,B}
+const SplineVector{T,B<:BSplineOrRestricted} = FuncVector{T,B}
+const SplineMatrix{T,B<:BSplineOrRestricted} = FuncMatrix{T,B}
+const SplineVecOrMat{T,B<:BSplineOrRestricted} = FuncVecOrMat{T,B}
 
-const AdjointSplineArray{T,N,B<:BSplineOrRestricted} = MulQuasiArray{T,<:Any,<:Tuple{<:Adjoint{T,<:AbstractArray{T,N}},
-                                                                                           <:QuasiAdjoint{T,<:B}}}
-const AdjointSplineVector{T,B<:BSplineOrRestricted} = AdjointSplineArray{T,1,B}
-const AdjointSplineMatrix{T,B<:BSplineOrRestricted} = AdjointSplineArray{T,2,B}
-const AdjointSplineVecOrMat{T,B<:BSplineOrRestricted} = Union{AdjointSplineVector{T,B},AdjointSplineMatrix{T,B}}
+const AdjointSplineArray{T,N,B<:BSplineOrRestricted} = AdjointFuncArray{T,N,B}
+const AdjointSplineVector{T,B<:BSplineOrRestricted} = AdjointFuncVector{T,B}
+const AdjointSplineMatrix{T,B<:BSplineOrRestricted} = AdjointFuncMatrix{T,B}
+const AdjointSplineVecOrMat{T,B<:BSplineOrRestricted} = AdjointFuncVecOrMat{T,B}
 
 Base.show(io::IO, spline::SplineVector) =
     write(io, "Spline on $(spline.args[1])")

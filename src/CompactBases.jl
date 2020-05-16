@@ -32,6 +32,7 @@ using RecipesBase
 
 include("distributions.jl")
 include("restricted_bases.jl")
+include("types.jl")
 include("unit_vectors.jl")
 include("intervals.jl")
 include("knot_sets.jl")

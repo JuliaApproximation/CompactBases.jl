@@ -19,6 +19,7 @@ equivalent to [`step`](@ref).
 local_step(B::AbstractFiniteDifferences, _) = step(B)
 weight(B::AbstractFiniteDifferences{T}, _) where T = one(T)
 weights(B::AbstractFiniteDifferences) = weight.(Ref(B), axes(B,2))
+weights(B::RestrictedFiniteDifferences) = weight.(Ref(parent(B)), indices(B,2))
 
 ==(A::AbstractFiniteDifferences,B::AbstractFiniteDifferences) = locs(A) == locs(B)
 
@@ -73,16 +74,15 @@ getindex(B::RestrictedFiniteDifferences, x::AbstractVector, sel::AbstractVector)
 
 # * Types
 
-const FDArray{T,N,B<:FiniteDifferencesOrRestricted} = MulQuasiArray{T,N,<:Tuple{B,<:AbstractArray{T,N}}}
-const FDVector{T,B<:FiniteDifferencesOrRestricted} = FDArray{T,1,B}
-const FDMatrix{T,B<:FiniteDifferencesOrRestricted} = FDArray{T,2,B}
-const FDVecOrMat{T,B<:FiniteDifferencesOrRestricted} = Union{FDVector{T,B},FDMatrix{T,B}}
+const FDArray{T,N,B<:FiniteDifferencesOrRestricted} = FuncArray{T,N,B}
+const FDVector{T,B<:FiniteDifferencesOrRestricted} = FuncVector{T,B}
+const FDMatrix{T,B<:FiniteDifferencesOrRestricted} = FuncMatrix{T,B}
+const FDVecOrMat{T,B<:FiniteDifferencesOrRestricted} = FuncVecOrMat{T,B}
 
-const AdjointFDArray{T,N,B<:FiniteDifferencesOrRestricted} = MulQuasiArray{T,<:Any,<:Tuple{<:Adjoint{T,<:AbstractArray{T,N}},
-                                                                                           <:QuasiAdjoint{T,<:B}}}
-const AdjointFDVector{T,B<:FiniteDifferencesOrRestricted} = AdjointFDArray{T,1,B}
-const AdjointFDMatrix{T,B<:FiniteDifferencesOrRestricted} = AdjointFDArray{T,2,B}
-const AdjointFDVecOrMat{T,B<:FiniteDifferencesOrRestricted} = Union{AdjointFDVector{T,B},AdjointFDMatrix{T,B}}
+const AdjointFDArray{T,N,B<:FiniteDifferencesOrRestricted} = AdjointFuncArray{T,N,B}
+const AdjointFDVector{T,B<:FiniteDifferencesOrRestricted} = AdjointFuncVector{T,B}
+const AdjointFDMatrix{T,B<:FiniteDifferencesOrRestricted} = AdjointFuncMatrix{T,B}
+const AdjointFDVecOrMat{T,B<:FiniteDifferencesOrRestricted} = AdjointFuncVecOrMat{T,B}
 
 # This is an operator on the form O = B*M*B⁻¹, where M is a matrix
 # acting on the expansion coefficients. When applied to e.g. a
@@ -500,7 +500,7 @@ end
 # evaluating the function on the grid points, since the basis
 # functions are orthogonal (in the sense of a quadrature) and there is
 # no overlap between adjacent basis functions.
-function Base.:(\ )(B::FD, f::BroadcastQuasiArray) where {T,FD<:AbstractFiniteDifferences{T}}
+function Base.:(\ )(B::FiniteDifferencesOrRestricted, f::BroadcastQuasiArray)
     axes(f,1) == axes(B,1) ||
         throw(DimensionMismatch("Function on $(axes(f,1).domain) cannot be interpolated over basis on $(axes(B,1).domain)"))
 

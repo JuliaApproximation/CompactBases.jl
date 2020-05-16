@@ -12,8 +12,10 @@ using BandedMatrices
 using BlockBandedMatrices
 using LazyArrays
 import LazyArrays: materialize
+using FillArrays
 
 using Test
 
 include("derivative_accuracy_utils.jl")
 include("fedvr/runtests.jl")
+include("inner_products.jl")

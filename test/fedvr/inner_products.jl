@@ -15,20 +15,6 @@
             @test (uv'*(B'B̃)*vv)[1] == 5
             @test norm(v) ≈ √5
         end
-
-        @testset "Lazy inner products" begin
-            lu = B ⋆ uv
-            lv = B̃ ⋆ vv
-
-            lazyip = lu' ⋆ lv
-
-            @test lazyip isa CompactBases.LazyFEDVRInnerProduct
-            @test materialize(lazyip) == 5
-
-            ϕ = B ⋆ rand(ComplexF64, size(B,2))
-            normalize!(ϕ)
-            @test materialize(ϕ'⋆ϕ) ≈ 1.0
-        end
     end
 
     @testset "Matrices" begin
@@ -50,14 +36,6 @@
             Φ̂ = R*Φ
             Φ̂'Φ̂
             @test Φ̂'Φ̂ ≈ I
-        end
-
-        @testset "Lazy inner products" begin
-            Φ̃ = R ⋆ Φ
-            lzip = Φ̃' ⋆ Φ̃
-            @test lzip isa CompactBases.LazyFEDVRInnerProduct
-            @test size(lzip) == (n,n)
-            @test materialize(lzip) ≈ I
         end
     end
 end

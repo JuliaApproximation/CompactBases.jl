@@ -358,7 +358,7 @@ function ExpKnotSet(k::Integer, a::T, b::T, N::Integer,
 end
 
 function show(io::IO, t::ExpKnotSet)
-    write(io, "$(typeof(t).name)($(eltype(t))) of  on ")
+    write(io, "$(typeof(t).name)($(eltype(t))) of ")
     show_order_multiplicities(io, t)
     write(io, " on ")
     t.include0 && write(io, "0,")

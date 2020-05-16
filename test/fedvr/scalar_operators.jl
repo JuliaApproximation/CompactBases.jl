@@ -21,15 +21,13 @@ end
 
         @testset "Mass matrices" begin
             d = R'R
-            @test d === I
+            @test d == Diagonal(Ones(m))
 
             d̃ = R̃'R̃
-            @test d̃ === I
+            @test d̃ == Diagonal(Ones(n))
 
             @test R'R̃ == (R̃'R)' == BandedMatrix((-1 => ones(Int,n),), (m,n), (1,-1))
-
-            # This behaviour is subject to change.
-            @test_throws DimensionMismatch R̃'R[:,1:end-1]
+            @test R̃'R[:,1:end-1] == BandedMatrix((1 => ones(Int,n),), (n,m-1), (-1,1))
         end
 
         @testset "Inverses" begin

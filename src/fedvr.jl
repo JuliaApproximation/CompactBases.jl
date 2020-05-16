@@ -301,16 +301,15 @@ getindex(B::RestrictedFEDVR, x::AbstractVector, sel::AbstractVector) =
 
 # * Types
 
-const FEDVRArray{T,N,B<:FEDVROrRestricted} = MulQuasiArray{T,N,<:Tuple{B,<:AbstractArray{T,N}}}
-const FEDVRVector{T,B<:FEDVROrRestricted} = FEDVRArray{T,1,B}
-const FEDVRMatrix{T,B<:FEDVROrRestricted} = FEDVRArray{T,2,B}
-const FEDVRVecOrMat{T,B<:FEDVROrRestricted} = Union{FEDVRVector{T,B},FEDVRMatrix{T,B}}
+const FEDVRArray{T,N,B<:FEDVROrRestricted} = FuncArray{T,N,B}
+const FEDVRVector{T,B<:FEDVROrRestricted} = FuncVector{T,B}
+const FEDVRMatrix{T,B<:FEDVROrRestricted} = FuncMatrix{T,B}
+const FEDVRVecOrMat{T,B<:FEDVROrRestricted} = FuncVecOrMat{T,B}
 
-const AdjointFEDVRArray{T,N,B<:FEDVROrRestricted} = MulQuasiArray{T,<:Any,<:Tuple{<:Adjoint{T,<:AbstractArray{T,N}},
-                                                                                  <:QuasiAdjoint{T,<:B}}}
-const AdjointFEDVRVector{T,B<:FEDVROrRestricted} = AdjointFEDVRArray{T,1,B}
-const AdjointFEDVRMatrix{T,B<:FEDVROrRestricted} = AdjointFEDVRArray{T,2,B}
-const AdjointFEDVRVecOrMat{T,B<:FEDVROrRestricted} = Union{AdjointFEDVRVector{T,B},AdjointFEDVRMatrix{T,B}}
+const AdjointFEDVRArray{T,N,B<:FEDVROrRestricted} = AdjointFuncArray{T,N,B}
+const AdjointFEDVRVector{T,B<:FEDVROrRestricted} = AdjointFuncVector{T,B}
+const AdjointFEDVRMatrix{T,B<:FEDVROrRestricted} = AdjointFuncMatrix{T,B}
+const AdjointFEDVRVecOrMat{T,B<:FEDVROrRestricted} = AdjointFuncVecOrMat{T,B}
 
 # * Mass matrix
 
