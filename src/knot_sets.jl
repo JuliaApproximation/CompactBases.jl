@@ -232,7 +232,6 @@ function within_support(x::AbstractVector, t::AbstractKnotSet, j::Integer)
     # the other intervals are only right-continuous.
     IntervalKind(i) = i == numintervals(t) ? ClosedInterval : RightContinuous
     ml = leftmultiplicity(t)
-    # @show j, j:j+k-1
     supports = [(findall(in(IntervalKind(i-ml+1)(t[i], t[i+1])), x), i)
                 for i = j:j+k-1]
     filter(s -> !isempty(s[1]), supports)

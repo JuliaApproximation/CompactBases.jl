@@ -3,6 +3,8 @@
 function diffop!(dest::AbstractMatrix,
                  L::BSplineOrRestricted, R::BSplineOrRestricted,
                  o)
+    assert_compatible_BSplines(L,R)
+
     k = max(order(L),order(R))
     (bandwidth(dest,1) ≤ k-1) && (bandwidth(dest,2) ≤ k-1) ||
         throw(DimensionMismatch("Insufficient bandwidths of destination matrix"))
@@ -31,11 +33,7 @@ diffop!(dest::BandedMatrix, B::BSplineOrRestricted, o) =
         Matrix(undef, parent(Ac), B, T)
     end
     dest::AbstractMatrix{T} -> begin
-        A = parent(Ac)
-        parent(A) == parent(B) ||
-            throw(ArgumentError("Cannot multiply functions on different grids"))
-
-        diffop!(dest, A, B, 1)
+        diffop!(dest, parent(Ac), B, 1)
     end
 end
 
@@ -48,10 +46,6 @@ end
         Matrix(undef, parent(Ac), B, T)
     end
     dest::AbstractMatrix{T} -> begin
-        A = parent(Ac)
-        parent(A) == parent(B) ||
-            throw(ArgumentError("Cannot multiply functions on different grids"))
-
-        diffop!(dest, A, B, 2)
+        diffop!(dest, parent(Ac), B, 2)
     end
 end

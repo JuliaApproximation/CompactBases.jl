@@ -1,6 +1,6 @@
 import CompactBases: nel, complex_rotate, real_locs
 
-@testset "FEDVR" begin
+@testset "FE-DVR" begin
     include("basics.jl")
     include("complex_scaling.jl")
     include("block_structure.jl")

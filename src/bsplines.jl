@@ -72,16 +72,23 @@ function overlap_matrix!(S::Union{BandedMatrix,Tridiagonal}, χ, ξ, w)
     S
 end
 
+function assert_compatible_BSplines(A::BSplineOrRestricted, B::BSplineOrRestricted)
+    A = parent(A)
+    B = parent(B)
+    A.t.t == B.t.t &&
+        A.x == B.x &&
+        A.w == B.w ||
+        throw(ArgumentError("Can only multiply B-spline bases with identical knot sets, resolved on the same Gauß–Legendre points"))
+end
+
 function overlap_matrix!(S::Union{BandedMatrix,Tridiagonal},
-                         Ac::AdjointBasisOrRestricted{<:BSpline},
-                         B::BasisOrRestricted{<:BSpline},
+                         Ac::AdjointBSplineOrRestricted,
+                         B::BSplineOrRestricted,
                          op=I)
     A = parent(Ac)
-    parent(A) == parent(B) ||
-        throw(ArgumentError("Cannot multiply functions on different grids"))
-    values = parent(B).B
-    χ = view(values, :, indices(A,2))
-    ξ = view(values, :, indices(B,2))
+    assert_compatible_BSplines(A,B)
+    χ = view(parent(A).B, :, indices(A,2))
+    ξ = view(parent(B).B, :, indices(B,2))
     overlap_matrix!(S, χ, op*ξ, weights(parent(B)))
 end
 
@@ -263,8 +270,8 @@ function Base.zeros(A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}=A, ::Ty
 end
 
 # * Mass matrix
-@materialize function *(Ac::AdjointBasisOrRestricted{<:BSpline},
-                        B::BasisOrRestricted{<:BSpline})
+@materialize function *(Ac::AdjointBSplineOrRestricted,
+                        B::BSplineOrRestricted)
     BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
@@ -276,9 +283,9 @@ end
 
 # * Diagonal operators
 
-@materialize function *(Ac::AdjointBasisOrRestricted{<:BSpline},
+@materialize function *(Ac::AdjointBSplineOrRestricted,
                         D::QuasiDiagonal,
-                        B::BasisOrRestricted{<:BSpline})
+                        B::BSplineOrRestricted)
     BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
