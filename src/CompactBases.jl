@@ -30,6 +30,8 @@ using FastGaussQuadrature
 using Formatting
 using RecipesBase
 
+vandermonde(B::Basis) = B[locs(B),:]
+
 include("distributions.jl")
 include("restricted_bases.jl")
 include("types.jl")
@@ -56,13 +58,23 @@ include("bspline_derivatives.jl")
 include("inner_products.jl")
 include("densities.jl")
 
-export AbstractFiniteDifferences, FiniteDifferences, StaggeredFiniteDifferences, ImplicitFiniteDifferences,
-    Derivative, dot, QuasiDiagonal, Inclusion, .., distribution
 
-export FEDVR, Derivative, @elem, dot
+"""
+    centers(B)
 
-export BSpline
+Return the locations of the mass centers of all basis functions of
+`B`; for orthogonal bases such as finite-differences and FE-DVR, this
+is simply [`locs`](@ref), i.e. the location of the quadrature nodes.
+"""
+centers(B::BasisOrRestricted) = locs(B)
 
-export ArbitraryKnotSet, LinearKnotSet, ExpKnotSet, order, numintervals, numfunctions, nonempty_intervals
+export AbstractFiniteDifferences,
+    FiniteDifferences, StaggeredFiniteDifferences, ImplicitFiniteDifferences,
+    Derivative, dot, QuasiDiagonal, Inclusion, .., distribution,
+    FEDVR, Derivative, @elem, dot,
+    BSpline,
+    ArbitraryKnotSet, LinearKnotSet, ExpKnotSet,
+    order, numintervals, numfunctions, nonempty_intervals,
+    centers, vandermonde, Density
 
 end # module

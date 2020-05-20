@@ -72,7 +72,7 @@ function overlap_matrix!(S::Union{BandedMatrix,Tridiagonal}, χ, ξ, w)
     S
 end
 
-function assert_compatible_BSplines(A::BSplineOrRestricted, B::BSplineOrRestricted)
+function assert_compatible_bases(A::BSplineOrRestricted, B::BSplineOrRestricted)
     A = parent(A)
     B = parent(B)
     A.t.t == B.t.t &&
@@ -86,7 +86,7 @@ function overlap_matrix!(S::Union{BandedMatrix,Tridiagonal},
                          B::BSplineOrRestricted,
                          op=I)
     A = parent(Ac)
-    assert_compatible_BSplines(A,B)
+    assert_compatible_bases(A,B)
     χ = view(parent(A).B, :, indices(A,2))
     ξ = view(parent(B).B, :, indices(B,2))
     overlap_matrix!(S, χ, op*ξ, weights(parent(B)))
@@ -137,6 +137,13 @@ weights(B::BSpline) = B.w
 
 IntervalSets.leftendpoint(B::BSpline) = B.x[1]
 IntervalSets.rightendpoint(B::BSpline) = B.x[end]
+
+function centers(B::BSplineOrRestricted)
+    x = B'*QuasiDiagonal(axes(B,1))*B
+    S = B'B
+
+    diag(x) ./ diag(S)
+end
 
 # # * Basis functions
 

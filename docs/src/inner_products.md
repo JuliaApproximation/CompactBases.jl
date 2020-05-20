@@ -1,4 +1,4 @@
-# Inner products and norms
+# Inner products & norms
 
 ## Inner products
 

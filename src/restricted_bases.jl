@@ -58,7 +58,18 @@ IntervalSets.leftendpoint(B::RestrictedQuasiArray) =
 IntervalSets.rightendpoint(B::RestrictedQuasiArray) =
     rightendpoint(parent(B))
 
+# TODO: This is invalid for non-orthogonal bases such as B-splines,
+# since it selects as many quadrature nodes as there are basis
+# functions in the restriction. Each B-spline is actually associated
+# with a range of quadrature nodes.
 locs(B::RestrictedQuasiArray) = locs(parent(B))[indices(B,2)]
 real_locs(B::RestrictedQuasiArray) = real_locs(parent(B))[indices(B,2)]
 
+centers(B::RestrictedQuasiArray) = centers(parent(B))[indices(B,2)]
+
+weights(B::RestrictedQuasiArray) = weights(parent(B))[indices(B,2)]
+inverse_weights(B::RestrictedQuasiArray) = inverse_weights(parent(B))[indices(B,2)]
+
 distribution(B::RestrictedQuasiArray) = distribution(parent(B))
+
+vandermonde(B::RestrictedQuasiArray) = vandermonde(parent(B))[:,indices(B,2)]

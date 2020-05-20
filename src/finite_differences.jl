@@ -18,10 +18,16 @@ equivalent to [`step`](@ref).
 """
 local_step(B::AbstractFiniteDifferences, _) = step(B)
 weight(B::AbstractFiniteDifferences{T}, _) where T = one(T)
-weights(B::AbstractFiniteDifferences) = weight.(Ref(B), axes(B,2))
-weights(B::RestrictedFiniteDifferences) = weight.(Ref(parent(B)), indices(B,2))
+weights(B::AbstractFiniteDifferences{T}) where T = ones(T,size(B,2))
+
+inverse_weight(B::AbstractFiniteDifferences{T}, _) where T = one(T)
+inverse_weights(B::AbstractFiniteDifferences{T}) where T = ones(T,size(B,2))
 
 ==(A::AbstractFiniteDifferences,B::AbstractFiniteDifferences) = locs(A) == locs(B)
+
+assert_compatible_bases(A::FiniteDifferencesOrRestricted, B::FiniteDifferencesOrRestricted) =
+    locs(A) == locs(B) ||
+        throw(ArgumentError("Can only multiply finite-differences sharing the same nodes"))
 
 function loc(B::AbstractFiniteDifferences, i)
     N = size(B,2)
@@ -71,6 +77,14 @@ getindex(B::FiniteDifferencesOrRestricted, x::AbstractVector, ::Colon) =
 
 getindex(B::RestrictedFiniteDifferences, x::AbstractVector, sel::AbstractVector) =
     getindex(parent(B), x, indices(B,2)[sel])
+
+vandermonde(::Uniform, B::AbstractFiniteDifferences{T}) where T =
+    BandedMatrices._BandedMatrix(Ones{T}(1,size(B,2)), axes(B,2), 0, 0)
+
+vandermonde(::NonUniform, B::AbstractFiniteDifferences) =
+    BandedMatrix(0 => weights(B))
+
+vandermonde(B::AbstractFiniteDifferences) = vandermonde(distribution(B), B)
 
 # * Types
 
@@ -308,11 +322,21 @@ step(B::StaggeredFiniteDifferences{<:Any,<:AbstractRange}) = step(B.r)
 # matrix and derivative stencils work properly.
 step(B::StaggeredFiniteDifferences{T}) where T = one(T)
 local_step(B::StaggeredFiniteDifferences, j) = local_step(B.r, j)
-weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
-weight(B::StaggeredFiniteDifferences, j) = 1/√(local_step(B, j))
 
 IntervalSets.leftendpoint(B::StaggeredFiniteDifferences{T}) where T = zero(T)
 IntervalSets.rightendpoint(B::StaggeredFiniteDifferences{T}) where T = 2B.r[end]-B.r[end-1]
+
+weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
+weight(B::StaggeredFiniteDifferences, j) = 1/√(local_step(B, j))
+
+weights(B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T = ones(T, size(B,2))
+weights(B::StaggeredFiniteDifferences) = weight.(Ref(B), 1:size(B,2))
+
+inverse_weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
+inverse_weight(B::StaggeredFiniteDifferences, j) = √(local_step(B, j))
+
+inverse_weights(B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T = ones(T, size(B,2))
+inverse_weights(B::StaggeredFiniteDifferences) = inverse_weight.(Ref(B), 1:size(B,2))
 
 ==(A::StaggeredFiniteDifferences,B::StaggeredFiniteDifferences) = locs(A) == locs(B) && A.Z == B.Z && A.δβ₁ == B.δβ₁
 

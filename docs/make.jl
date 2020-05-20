@@ -11,6 +11,7 @@ makedocs(;
         "Home" => "index.md",
         "Overview" => "overview.md",
         "Inner products & norms" => "inner_products.md",
+        "Densities" => "densities.md",
         "Finite-differences" => [
             "Overview" => "fd_overview.md",
             "Non-uniform grids" => "fd_non_uniform.md",

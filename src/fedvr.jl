@@ -67,6 +67,10 @@ axes(B::FEDVR) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(length(B.x)))
 size(B::FEDVR) = (ℵ₁, length(B.x))
 ==(A::FEDVR,B::FEDVR) = A.t == B.t && A.order == B.order
 
+assert_compatible_bases(A::FEDVROrRestricted, B::FEDVROrRestricted) =
+    parent(A) == parent(B) ||
+        throw(ArgumentError("Can only multiply FEDVRs of the same order and sharing the same nodes"))
+
 distribution(B::FEDVR) = distribution(B.t)
 
 order(B::FEDVR) = B.order
@@ -189,6 +193,14 @@ end
 
 IntervalSets.leftendpoint(B::FEDVR) = B.x[1]
 IntervalSets.rightendpoint(B::FEDVR) = B.x[end]
+
+weight(B::FEDVR, j) = inv(B.n[j])
+weights(B::FEDVR) = inv.(B.n)
+
+inverse_weight(B::FEDVR, j) = B.n[j]
+inverse_weights(B::FEDVR) = B.n
+
+vandermonde(B::FEDVR) = BandedMatrix(0 => B.n)
 
 # * Basis functions
 
