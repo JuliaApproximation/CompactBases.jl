@@ -111,6 +111,76 @@ matrix and the product formula is simpler still:
 \vec{g}.
 ```
 
+## Example
+
+```jldoctest
+julia> import CompactBases: applied
+
+julia> f = x -> sin(2π*x);
+
+julia> g = x -> x*exp(-x);
+
+julia> h = x -> f(x)*g(x);
+
+julia> rmax,k,N = 10.0,7,71
+(10.0, 7, 71)
+
+julia> R = BSpline(LinearKnotSet(k, 0, rmax, N))
+BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
+
+julia> r = axes(R,1)
+Inclusion(0.0..10.0)
+
+julia> cf = R \ f.(r);
+
+julia> cg = R \ g.(r);
+
+julia> ch = R \ h.(r); # Direct expansion of density for comparison
+
+julia> ρ = Density(applied(*,R,cf), applied(*,R,cg));
+
+julia> ρ.ρ # Expansion coefficients computed via Vandermonde interpolation
+77-element Array{Float64,1}:
+  2.5990302560741227e-6
+ -1.2089008321819097e-5
+  0.016650515757241868
+  0.08609474140758361
+  0.22264566607626868
+  0.28428278922020694
+  0.04487154524021238
+ -0.3097583765428373
+ -0.45136208173491543
+ -0.23816476137564302
+  0.16360184909444878
+  0.43464800730290326
+  0.3730492731330008
+  0.046047307534972166
+ -0.2846933885764034
+ -0.3797631540817138
+  ⋮
+  0.002725515878867043
+  0.0015277308449457526
+ -0.00041784201453291337
+ -0.0016586000070113436
+ -0.0015285004379182573
+ -0.00041624819494116155
+  0.0007250143682327532
+  0.0011338505005407673
+  0.0007023771068706905
+ -9.73144173106993e-5
+ -0.0006544921666713287
+ -0.0006548469749281168
+ -0.0004243163194033977
+ -0.00020768615644842965
+ -6.69583797265351e-5
+ -5.669216664398177e-10
+
+julia> norm(ρ.ρ - ch)
+1.5656487551918337e-6
+```
+
+![Mutual densities](figures/mutual_densities.svg)
+
 ## Bibliography
 
 [^moerken1991]:   K. Mørken (1991). Some Identities for Products and Degree Raising of Splines. Constructive Approximation, 7(1), 195–208. <http://dx.doi.org/10.1007/bf01888153>

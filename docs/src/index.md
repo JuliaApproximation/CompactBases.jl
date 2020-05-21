@@ -15,7 +15,7 @@ julia> a,b = 0.0,1.0 # Extents
 julia> N = 13 # Number of nodes
 13
 
-julia> k = 5 # Order of FE-DVR/B-splines
+julia> k = 5 # Order of B-splines
 5
 
 julia> x = range(a, stop=b, length=1000)
@@ -40,9 +40,11 @@ julia> # Finite-element boundaries
            tf = range(a, stop=b, length=N+2)
 0.0:0.07142857142857142:1.0
 
+julia> using LazyArrays, FillArrays
+
 julia> # We can vary the polynomial order in each element
-           forder = vcat(7, fill(4,length(tf)-2))
-14-element Array{Int64,1}:
+           forder = Vcat(7, Fill(4,length(tf)-2))
+14-element ApplyArray{Int64,1,typeof(vcat),Tuple{Int64,Fill{Int64,1,Tuple{Base.OneTo{Int64}}}}}:
  7
  4
  4

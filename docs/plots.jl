@@ -12,6 +12,7 @@ using LinearAlgebra
 using ArnoldiMethod
 
 using CompactBases
+import CompactBases: applied
 
 function mean_color(color::String)
     c = parse(Colorant, color)
@@ -103,6 +104,92 @@ function restricted_bases()
     savedocfig("restricted_bases")
 end
 
+function densities()
+    f = x -> sin(2π*x)
+    g = x -> x*exp(-x)
+    h = x -> f(x)*g(x)
+
+    rmin = 0.01
+    rmax = 10.0
+    ρ = 0.05
+    N = ceil(Int, rmax/ρ)
+    k = 7
+    Nn = 71
+
+    ρmin=rmin
+    ρmax=0.5
+    α=0.01
+
+    coeff_centers = Vector{Vector{Float64}}()
+    density_coeffs = Vector{Vector{Float64}}()
+    errors = Vector{Vector{Float64}}()
+    ϕ = Vector{Vector{Float64}}()
+
+    rr = 10.0 .^ range(-2, stop=log10(rmax), length=3000)
+
+    for R in [FiniteDifferences(N, ρ),
+              StaggeredFiniteDifferences(ρmin, ρmax, α, rmax, 0.0),
+              FEDVR(range(0, stop=rmax, length=Nn), k),
+              BSpline(LinearKnotSet(k, 0, rmax, Nn))]
+        r = axes(R,1)
+
+        cf = R \ f.(r)
+        cg = R \ g.(r)
+        ch = R \ h.(r)
+
+        ρ = Density(applied(*,R,cf), applied(*,R,cg))
+
+        push!(coeff_centers, centers(R))
+        push!(density_coeffs, ρ.ρ)
+        push!(errors, ρ.ρ-ch)
+        push!(ϕ, R[rr,:]*ρ.ρ)
+    end
+
+    cfigure("mutual density", figsize=(7,10)) do
+        csubplot(411,nox=true) do
+            semilogx(rr, f.(rr), linewidth=1.0)
+            semilogx(rr, g.(rr), linewidth=1.0)
+            semilogx(rr, h.(rr), linewidth=2.0)
+            legend([L"f(x)", L"g(x)", L"h(x)"])
+        end
+        csubplot(412, nox=true) do
+            for ϕ in ϕ
+                loglog(rr, abs.(ϕ-h.(rr)))
+            end
+            yl = ylim()
+            ylim(max(yl[1],1e-15), yl[2])
+            legend(["Finite-differences",
+                    "Log–linear finite-differences",
+                    "FE-DVR",
+                    "B-splines"])
+            ylabel("Reconstruction error")
+        end
+        csubplot(413, nox=true) do
+            for (r,c) in zip(coeff_centers, density_coeffs)
+                semilogx(r, c, ".-", linewidth=1.0)
+            end
+            legend(["Finite-differences",
+                    "Log–linear finite-differences",
+                    "FE-DVR",
+                    "B-splines"])
+            ylabel("Expansion coefficients")
+        end
+        csubplot(414) do
+            for (r,e) in zip(coeff_centers, errors)
+                loglog(r, abs.(e), ".-", linewidth=1.0)
+            end
+            legend(["Finite-differences",
+                    "Log–linear finite-differences",
+                    "FE-DVR",
+                    "B-splines"])
+            ylabel("Coefficient error")
+            xlabel(L"r")
+        end
+    end
+
+    savedocfig("mutual_densities")
+end
+
 macro echo(expr)
     println(expr)
     :(@time $expr)
@@ -115,3 +202,4 @@ mkpath("docs/src/figures")
 @echo restricted_bases()
 include("bspline_plots.jl")
 include("fd_plots.jl")
+@echo densities()

@@ -54,9 +54,9 @@ julia> B[0.0:0.05:1.1,:]
 
 ## (Non-)Orthogonal bases
 
-By orthogonal basis we mean those that have metrics (or mass matrices)
-with one diagonal only. The values on the diagonal can be different
-from unity (i.e. it may be an integration weight):
+By orthogonal basis we mean those that have metrics[^metric] with one
+diagonal only. The values on the diagonal can be different from unity
+(i.e. it may be an integration weight):
 
 ```julia
 julia> B = FiniteDifferences(10, 0.1)
@@ -114,6 +114,10 @@ julia> S = B'B
 ```
 
 where the bandwidth depends on the B-spline order.
+
+[^metric]: also known as mass matrix, [Gramian
+    matrix](https://en.wikipedia.org/wiki/Gramian_matrix), [overlap
+    matrix](https://en.wikipedia.org/wiki/Overlap_matrix), etc.
 
 ## Restricted bases
 
