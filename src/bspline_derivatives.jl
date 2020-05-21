@@ -3,7 +3,7 @@
 function diffop!(dest::AbstractMatrix,
                  L::BSplineOrRestricted, R::BSplineOrRestricted,
                  o)
-    assert_compatible_BSplines(L,R)
+    assert_compatible_bases(L,R)
 
     k = max(order(L),order(R))
     (bandwidth(dest,1) ≤ k-1) && (bandwidth(dest,2) ≤ k-1) ||

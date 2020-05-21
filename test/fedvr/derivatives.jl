@@ -157,6 +157,8 @@ end
     lineplot!(plt, oo, slopes[:,2], name="ph")
     lineplot!(plt, oo, slopes[:,3], name="ph′")
     display(plt)
+    println()
+    println()
     
     # The convergence rate should be order - 1 (polynomial order =
     # polynomial degree + 1), but since the error slope fitting is a

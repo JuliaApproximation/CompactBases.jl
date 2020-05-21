@@ -113,4 +113,4 @@ matrix and the product formula is simpler still:
 
 ## Bibliography
 
-[^moerken1991]:   K. Mørken (1991). Some Identities for Products and Degree Raising of Splines. Constructive Approximation, 7(1), 195–208. http://dx.doi.org/10.1007/bf01888153
+[^moerken1991]:   K. Mørken (1991). Some Identities for Products and Degree Raising of Splines. Constructive Approximation, 7(1), 195–208. <http://dx.doi.org/10.1007/bf01888153>

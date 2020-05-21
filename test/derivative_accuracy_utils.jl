@@ -63,6 +63,8 @@ function error_slopes(hs, ϵ, names, verbosity=0)
         #     lineplot!(plt, loghs, q*loghs, name=o)
         # end
         display(plt)
+        println()
+        println()
     end
 
     slopes
