@@ -115,6 +115,16 @@ julia> S = B'B
 
 where the bandwidth depends on the B-spline order.
 
+For a review on non-orthogonal basis sets, and the complications they
+introduce, see e.g.
+
+- Soriano, M., & Palacios, J. J. (2014). Theory of Projections with
+  Nonorthogonal Basis Sets: Partitioning Techniques and Effective
+  Hamiltonians. Physical Review B, 90(7), 075128. DOI:
+  [10.1103/physrevb.90.075128](http://dx.doi.org/10.1103/physrevb.90.075128),
+  arXiv: [1404.2043](https://arxiv.org/abs/1404.2043)
+
+
 [^metric]: also known as mass matrix, [Gramian
     matrix](https://en.wikipedia.org/wiki/Gramian_matrix), [overlap
     matrix](https://en.wikipedia.org/wiki/Overlap_matrix), etc.

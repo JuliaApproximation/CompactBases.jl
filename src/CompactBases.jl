@@ -57,6 +57,7 @@ include("bspline_derivatives.jl")
 
 include("inner_products.jl")
 include("densities.jl")
+include("linear_operators.jl")
 
 
 """
@@ -75,6 +76,7 @@ export AbstractFiniteDifferences,
     BSpline,
     ArbitraryKnotSet, LinearKnotSet, ExpKnotSet,
     order, numintervals, numfunctions, nonempty_intervals,
-    centers, vandermonde, Density
+    centers, vandermonde, Density,
+    LinearOperator, DiagonalOperator, ShiftAndInvert
 
 end # module

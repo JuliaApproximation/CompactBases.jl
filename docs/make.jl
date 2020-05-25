@@ -11,6 +11,9 @@ makedocs(;
         "Home" => "index.md",
         "Overview" => "overview.md",
         "Inner products & norms" => "inner_products.md",
+        "Operators" => [
+            "Diagonal operators" => "diagonal_operators.md",
+        ],
         "Densities" => "densities.md",
         "Finite-differences" => [
             "Overview" => "fd_overview.md",

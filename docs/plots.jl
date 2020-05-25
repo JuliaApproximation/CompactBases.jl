@@ -13,6 +13,7 @@ using ArnoldiMethod
 
 using CompactBases
 import CompactBases: applied
+using IntervalSets
 
 function mean_color(color::String)
     c = parse(Colorant, color)
@@ -190,6 +191,80 @@ function densities()
     savedocfig("mutual_densities")
 end
 
+function diagonal_operators()
+    Z = 1.0
+    rmax = 20*(2^1.05)/Z
+
+    ρ = 0.1/Z
+    N = ceil(Int, rmax/ρ)
+    ufd = StaggeredFiniteDifferences(N, ρ, Z)
+
+    ρmin=0.1/Z
+    ρmax=0.6
+    α=0.002
+    nufd = StaggeredFiniteDifferences(ρmin, ρmax, α, rmax, Z)
+
+    fedvr = FEDVR(range(0, stop=rmax, length=20),
+                  vcat(10,fill(7,18)))[:,2:end-1]
+
+    bsplines = BSpline(ExpKnotSet(5, -2.0, log10(rmax), 100))[:,2:end-1]
+
+    R = bsplines
+
+    r = axes(R,1)
+    rr = clamp.(10.0 .^ range(min(-2,log10(r[1])), stop=log10(rmax), length=3000),
+                0, rightendpoint(R))
+    χ = R[rr,:]
+
+    r = axes(R,1)
+    V = r -> (0.314269680527354*r^2 + 0.20951312035157*r)*exp(-3*r/2);
+    Vc = R \ V.(r);
+    rc = R \ identity.(r);
+
+    L = DiagonalOperator(applied(*, R, Vc));
+    Lop = LinearOperator(L, R);
+
+    Vr = Lop*rc
+
+    Vr_exact = rr .* V.(rr)
+
+    cfigure("diagonal operators") do
+        csubplot(211,nox=true) do
+            semilogx(rr, χ*Vr, label=L"V(r)r")
+            semilogx(rr, Vr_exact, "--", label=L"$V(r)r$ exact")
+            semilogx(rr, V.(rr), label=L"V(r)")
+            yl = ylim()
+            semilogx(rr, rr, label=L"r")
+            ylim(yl)
+            legend()
+        end
+        csubplot(212) do
+            for (R,label) in [
+                (ufd, "Uniform finite-differences"),
+                (nufd, "Non-uniform finite-differences"),
+                (fedvr, "FE-DVR"),
+                (bsplines, "B-splines")
+            ]
+                r = axes(R,1)
+                Vc = R \ V.(r)
+                rc = R \ identity.(r)
+
+                L = DiagonalOperator(applied(*, R, Vc))
+                Lop = LinearOperator(L, R)
+
+                Vr = Lop*rc
+                χ = R[rr,:]
+                loglog(rr, abs.(χ*Vr - Vr_exact), label=label)
+            end
+            xlabel(L"r")
+            ylabel("Error")
+            legend()
+        end
+    end
+
+    savedocfig("diagonal_operators")
+end
+
 macro echo(expr)
     println(expr)
     :(@time $expr)
@@ -203,3 +278,4 @@ mkpath("docs/src/figures")
 include("bspline_plots.jl")
 include("fd_plots.jl")
 @echo densities()
+@echo diagonal_operators()
