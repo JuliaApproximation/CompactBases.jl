@@ -26,10 +26,16 @@ mean_position(x, ϕ) = ϕ'*Diagonal(x)*ϕ/(ϕ'ϕ)
 
 function savedocfig(name,dir="figures")
     fig = gcf()
-    savefig(joinpath("docs/src",dir,"$(name).svg"),
+    filename = joinpath(@__DIR__, "src", dir, "$(name).svg")
+    savefig(filename,
             transparent=true,
             facecolor=fig.get_facecolor())
     close(fig)
+    if isfile(filename)
+        println("Saved $(name) to $(filename)")
+    else
+        @warn "Saving $(name) to $(filename) failed"
+    end
 end
 
 function logo()
@@ -271,7 +277,9 @@ macro echo(expr)
 end
 
 @info "Documentation plots"
-mkpath("docs/src/figures")
+fig_dir = joinpath(@__DIR__, "src", "figures")
+mkpath(fig_dir)
+@assert isdir(fig_dir)
 @echo logo()
 @echo simple_example()
 @echo restricted_bases()

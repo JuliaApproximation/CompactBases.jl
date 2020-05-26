@@ -47,18 +47,18 @@ vector $\vec{t}$.
 
 The knot set $\vec{t}=\bmat{1&2&3&4&5&6}$ gives rise to the following
 cardinal splines, of orders $k=1..5$:
-![Cardinal splines](/figures/bsplines/cardinal-splines.svg)
+![Cardinal splines](../figures/bsplines/cardinal-splines.svg)
 
 By increasing the _multiplicity_ of some knots, the continuity of the
 splines can be controlled. E.g. the knot set
 $\vec{t}=\bmat{0&1&1&3&4&6&6&6}$, will yield the following splines:
-![Discontinuous splines](/figures/bsplines/discontinuous-splines.svg)
+![Discontinuous splines](../figures/bsplines/discontinuous-splines.svg)
 
 Lastly, it is very common to pad the knot set such that the first and
 last knot have multiplicity $k$; this simplifies the implementation of
 boundary conditions when B-splines are used for solving differential
 equations:
-![Full multiplicity splines](/figures/bsplines/full-multiplicity-splines.svg)
+![Full multiplicity splines](../figures/bsplines/full-multiplicity-splines.svg)
 
 ## de Boor's algorithm
 
@@ -188,7 +188,7 @@ If we again consider the knot set $\vec{t}=\bmat{0&1&1&3&4&6&6&6}$ and
 allow operators of maximal polynomial order $k'=3$, we get the
 following distribution quadrature points:
 
-![Quadrature points](/figures/bsplines/quadrature-points.svg)
+![Quadrature points](../figures/bsplines/quadrature-points.svg)
 
 Note that no quadrature points were generated for the intervals
 $[t_i,t_{i+1})$, $i=2,6,7$, since those intervals are empty. Also note
@@ -292,8 +292,8 @@ $$\begin{equation}
 \operator{L}B\vec{f} = B\vec{g}.
 \end{equation}$$
 
-The left-hand side is trivially in the space $\space{P}_{t,k}$,
-whereas is not necessary true for the right-hand side, i.e. the
+The right-hand side is trivially in the space $\space{P}_{t,k}$,
+whereas is not necessary true for the left-hand side, i.e. the
 functional $\operator{L}$ may take $f$ out of the space. We can
 project the equation into the space $\space{P}_{t,k}$ by
 left-multiplying by the projector $BB^H$:

@@ -95,7 +95,7 @@ julia> χ*c
   0.9893582466233818
 ```
 
-![One-dimensional spline](/figures/bsplines/spline-1d.svg)
+![One-dimensional spline](../figures/bsplines/spline-1d.svg)
 
 It is then trivial to extend this to two dimensions:
 
@@ -118,4 +118,4 @@ julia> size(s̃)
 (ContinuumArrays.AlephInfinity{1}(), 2)
 ```
 
-![Two-dimensional spline](/figures/bsplines/spline-2d.svg)
+![Two-dimensional spline](../figures/bsplines/spline-2d.svg)

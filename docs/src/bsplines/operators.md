@@ -95,4 +95,4 @@ g̃ = S \ V*f
 and obtain two different approximations `g̃` to $g(x)$, as shown in the
 following plot:
 
-![Coulomb operator](/figures/bsplines/diagonal-operators.svg)
+![Coulomb operator](../figures/bsplines/diagonal-operators.svg)

@@ -147,4 +147,4 @@ exponential knot set:
 |   4 |    -0.03125 |     -0.03125 |         5.77127e-08 |          -0.03125 |              8.72813e-08 |
 |   5 |    -0.02000 |     -0.01994 |         5.60046e-05 |          -0.01994 |              5.63700e-05 |
 
-![Hydrogen eigenstates](/figures/bsplines/hydrogen-eigenstates.svg)
+![Hydrogen eigenstates](../figures/bsplines/hydrogen-eigenstates.svg)

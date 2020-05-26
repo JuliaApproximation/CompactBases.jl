@@ -1,6 +1,6 @@
 import CompactBases: locs, weights
 
-function compare_staggered_non_uniform()
+function fd_compare_staggered_non_uniform()
     N = 50
     rmax = 30.0
 
@@ -82,5 +82,5 @@ function compare_staggered_non_uniform()
     savedocfig("fd/compare_staggered_non_uniform_reconstruction")
 end
 
-mkpath("docs/src/figures/fd")
-@echo compare_staggered_non_uniform()
+mkpath(joinpath(fig_dir, "fd"))
+@echo fd_compare_staggered_non_uniform()

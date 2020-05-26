@@ -11,7 +11,7 @@ function Bspline_text(x, ϕ, j, k, color)
                           PathEffects.Normal()])
 end
 
-function cardinal_splines()
+function bsplines_cardinal_splines()
     a,b = 1.0,6.0
     x = range(a, stop=b, length=1001)
     cfigure("cardinal splines",figsize=(7,9)) do
@@ -35,7 +35,7 @@ function cardinal_splines()
     savedocfig("bsplines/cardinal-splines")
 end
 
-function discontinuous_splines()
+function bsplines_discontinuous_splines()
     t = ArbitraryKnotSet(3, [0.0, 1, 1, 3, 4, 6], 1, 3)
     r = range(first(t), stop=last(t), length=301)
     R = BSpline(t)
@@ -56,7 +56,7 @@ function discontinuous_splines()
     savedocfig("bsplines/discontinuous-splines")
 end
 
-function full_multiplicity_splines()
+function bsplines_full_multiplicity_splines()
     a,b = 1.0,6.0
     x = range(a, stop=b, length=1001)
     cfigure("splines",figsize=(7,9)) do
@@ -80,7 +80,7 @@ function full_multiplicity_splines()
     savedocfig("bsplines/full-multiplicity-splines")
 end
 
-function spline1d()
+function bsplines_spline1d()
     k = 4
     t = LinearKnotSet(k, 0, 1, 5)
     B = BSpline(t)
@@ -116,7 +116,7 @@ function spline1d()
     savedocfig("bsplines/spline-1d")
 end
 
-function spline2d()
+function bsplines_spline2d()
     k = 4
     t = LinearKnotSet(k, 0, 1, 5)
     B = BSpline(t)
@@ -138,7 +138,7 @@ function spline2d()
     savedocfig("bsplines/spline-2d")
 end
 
-function quadrature_points()
+function bsplines_quadrature_points()
     t = ArbitraryKnotSet(3, [0.0, 1, 1, 3, 4, 6], 1, 3)
     x = range(first(t), stop=last(t), length=301)
     B = BSpline(t)
@@ -173,7 +173,7 @@ function quadrature_points()
     savedocfig("bsplines/quadrature-points")
 end
 
-function function_interpolation()
+function bsplines_function_interpolation()
     t = LinearKnotSet(7, 0, 7, 10)
     B = BSpline(t)
     x = range(0, stop=7, length=301)
@@ -181,7 +181,7 @@ function function_interpolation()
     c = B \ sin.(axes(B,1))
     i = 1:size(B,2)
 
-    cfigure("function interpolation",figsize=(7,9)) do
+    cfigure("function bsplines_interpolation",figsize=(7,9)) do
         csubplot(311, nox=true) do
             plot(x, χ*c)
             plot([mean_position(x, view(χ, :, j)) for j in i], c, "s-")
@@ -198,7 +198,7 @@ function function_interpolation()
     savedocfig("bsplines/function-interpolation")
 end
 
-function restricted_basis_interpolation()
+function bsplines_restricted_basis_interpolation()
     t = LinearKnotSet(7, 0.0, 1.0, 6)
     x = range(first(t), stop=last(t), length=300)[2:end-1]
 
@@ -263,7 +263,7 @@ function restricted_basis_interpolation()
     savedocfig("bsplines/restricted-basis-interpolation")
 end
 
-function smooth_interpolation()
+function bsplines_smooth_interpolation()
     f = x -> sin(2π*x)
 
     rng = MersenneTwister(123);
@@ -294,7 +294,7 @@ function smooth_interpolation()
     savedocfig("bsplines/smooth-interpolation")
 end
 
-function diagonal_operators()
+function bsplines_diagonal_operators()
     k = 7
     N = 31
 
@@ -363,7 +363,7 @@ function find_second_derivative(B, f::Function)
     cf,cg
 end
 
-function sine_derivative()
+function bsplines_sine_derivative()
     t = LinearKnotSet(10, 0, 10, 30);
     B = BSpline(t)[:,2:end-1]
 
@@ -400,7 +400,7 @@ function sine_derivative()
     savedocfig("bsplines/sine-derivative")
 end
 
-function ode_hookes_law(xₘₐₓ, kspring, k, N)
+function bsplines_ode_hookes_law(xₘₐₓ, kspring, k, N)
     t = LinearKnotSet(k, 0, xₘₐₓ, N)
     # By omitting the first basis function, we enforce V(0) = 0
     B = BSpline(t,k′=1)[:,2:end]
@@ -472,7 +472,7 @@ end
 construct_linear_map(A,B,σ=0) =
     ShiftAndInvert(factorize(A-σ*B),B,Vector{eltype(A)}(undef, size(A,1)))
 
-function hydrogen_eigenstates()
+function bsplines_hydrogen_eigenstates()
 
     k = 7
     N = 31
@@ -541,18 +541,18 @@ function hydrogen_eigenstates()
     savedocfig("bsplines/hydrogen-eigenstates")
 end
 
-mkpath("docs/src/figures/bsplines")
-@echo cardinal_splines()
-@echo discontinuous_splines()
-@echo full_multiplicity_splines()
-@echo spline1d()
-@echo spline2d()
-@echo quadrature_points()
-@echo function_interpolation()
-@echo restricted_basis_interpolation()
-@echo smooth_interpolation()
-@echo diagonal_operators()
-@echo sine_derivative()
-@echo ode_hookes_law(3, 0.1, 7, 30)
-@echo ode_hookes_law(3, 0.1, 3, 1)
-@echo hydrogen_eigenstates()
+mkpath(joinpath(fig_dir, "bsplines"))
+@echo bsplines_cardinal_splines()
+@echo bsplines_discontinuous_splines()
+@echo bsplines_full_multiplicity_splines()
+@echo bsplines_spline1d()
+@echo bsplines_spline2d()
+@echo bsplines_quadrature_points()
+@echo bsplines_function_interpolation()
+@echo bsplines_restricted_basis_interpolation()
+@echo bsplines_smooth_interpolation()
+@echo bsplines_diagonal_operators()
+@echo bsplines_sine_derivative()
+@echo bsplines_ode_hookes_law(3, 0.1, 7, 30)
+@echo bsplines_ode_hookes_law(3, 0.1, 3, 1)
+@echo bsplines_hydrogen_eigenstates()

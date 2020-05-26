@@ -33,7 +33,7 @@ The top panel shows the expansion coefficents and the reconstructed
 function, the middle panel the reconstruction error, and the bottom
 panel the underlying basis functions.
 
-![Function interpolation by B-splines](/figures/bsplines/function-interpolation.svg)
+![Function interpolation by B-splines](../figures/bsplines/function-interpolation.svg)
 
 Since the sine function is non-zero at $x=7$, it is important that our
 basis set includes a B-spline that supports this, hence the full
@@ -120,7 +120,7 @@ julia> c̃2 = B̃ \ f2
   2.1869627421644977
 ```
 
-![Reconstruction of function interpolated on restricted bases](/figures/bsplines/restricted-basis-interpolation.svg)
+![Reconstruction of function interpolated on restricted bases](../figures/bsplines/restricted-basis-interpolation.svg)
 
 As is to be expected, the sine function is perfectly reconstructed in
 both cases, whilst the cosine fails spectactularly in the restricted
@@ -186,4 +186,4 @@ julia> c4 = B4[x,:] \ y
  -1.00556852643735
 ```
 
-![Smooth interpolation](/figures/bsplines/smooth-interpolation.svg)
+![Smooth interpolation](../figures/bsplines/smooth-interpolation.svg)

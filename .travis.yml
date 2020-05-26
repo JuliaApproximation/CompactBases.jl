@@ -21,7 +21,7 @@ jobs:
       env:
         - PYTHON=""
       script:
-        - julia --project=docs/ -e 'using Pkg; pkg"add PyCall PyPlot https://github.com/jagot/Jagot.jl.git https://github.com/jagot/PyPlotRecipes.jl.git Colors LinearAlgebra Statistics Random ArnoldiMethod"'
+        - julia --project=docs/ -e 'using Pkg; pkg"add PyCall PyPlot https://github.com/jagot/Jagot.jl.git https://github.com/jagot/PyPlotRecipes.jl.git Colors LinearAlgebra IntervalSets Statistics Random ArnoldiMethod"'
         - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
                                                Pkg.instantiate()'
         - julia --project=docs/ -e 'using Pkg; pkg"build PyPlot"'
