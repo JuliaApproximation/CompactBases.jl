@@ -305,6 +305,23 @@ end
     end
 end
 
+@materialize function *(Ac::AdjointBSplineOrRestricted,
+                        D::QuasiDiagonal,
+                        E::QuasiDiagonal,
+                        B::BSplineOrRestricted)
+    BSplineStyle
+    T -> begin
+        Matrix(undef, parent(Ac), B, T)
+    end
+    dest::AbstractMatrix{T} -> begin
+        # Evaluate the quasi-diagonal operators D & E on the quadrature roots
+        # of B.
+        op = Diagonal(getindex.(Ref(D.diag), locs(parent(B))) .*
+                      getindex.(Ref(E.diag), locs(parent(B))))
+        overlap_matrix!(dest, Ac, B, op)
+    end
+end
+
 
 # * Function interpolation
 
