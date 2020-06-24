@@ -1,8 +1,8 @@
 # Diagonal operators
 
-Diagonal operators are operators (functionals) that only depend on the
-coordinate; they are also called local operators. They act on a
-function to produce a new function as
+Diagonal operators are operators that only depend on the coordinate;
+they are also called local operators. They act on a function to
+produce a new function as
 
 ```math
 L f(x) = f(x)g(x)
@@ -159,7 +159,7 @@ B \defd
 ```
 
 We wish to find the matrix elements of the matrix representing the
-linear functional that acting on ``1`` gives ``f(x)``:
+linear operator that acting on ``1`` gives ``f(x)``:
 
 ```math
 \operator{L}1 = f(x),
@@ -174,28 +174,13 @@ i.e. we are in some sense trying to solve
 for ``\mat{L}``, where ``\vec{o}`` is the expansion coefficients of
 ``1`` in our basis.
 
-The most straightforward way is via the Vandermonde matrix ``V``
-
-```math
-f(\vec{x}) = \mat{V}\vec{f}
-```
-
-where ``\vec{x}`` the vector of interpolation points (quadrature
-nodes). The matrix elements of the linear operator are then simply
-computed by quadrature
-
-```math
-\mat{L}_{mn} = \matrixel{B_m}{f(\vec{x})}{B_n}
-```
-
-For the orthogonal bases, where ``B_m(x_k)=\delta_{mk}``, this matrix
-reduces to
-
-```math
-\mat{L}_{mn} = \delta_{mn}f(x_m),
-```
-
-as noted above.
+_However_, we may also consider an alternative approach, that is
+basically the same as the one described in the section on
+[Densities](@ref); what we are trying to achieve is a linear operator
+that when acting on a function produces the product of two functions
+expanded on the same basis. We may therefore employ the same routine
+as we use to find the mutual densities, but _without_ conjugating the
+first function (the one corresponding to the diagonal operator).
 
 ### Example
 

@@ -8,10 +8,12 @@ operator_metric(B) = B'B
 # the metric.
 operator_metric(::Uniform,     ::AbstractFiniteDifferences) = I
 # For non-uniform finite-differences, we should, however.
-operator_metric(::NonUniform, B::AbstractFiniteDifferences) = B'B
+operator_metric(::NonUniform, B::AbstractFiniteDifferences) = I
 
 operator_metric(B::AbstractFiniteDifferences) =
     operator_metric(distribution(B), B)
+
+operator_metric(B::FEDVROrRestricted) = I
 
 # * Linear operator
 struct LinearOperator{TA,TB,TT}
@@ -29,9 +31,9 @@ function LinearAlgebra.mul!(y, M::LinearOperator, x,
     if iszero(β)
         ldiv!(y, M.B⁻¹, M.temp)
     else
-        y *= β
+        y .*= β
         ldiv!(M.B⁻¹, M.temp)
-        y += M.temp
+        y .+= M.temp
     end
 end
 
@@ -53,71 +55,43 @@ LinearOperator(A, R::BasisOrRestricted) =
 
 # * Diagonal operator
 
-struct DiagonalOperator{T,Diag,Vandermonde,B,Mat<:AbstractMatrix{T},Tmp}
+struct DiagonalOperator{Diag,FunctionProduct,B}
     diag::Diag
-    V::Vandermonde
+    ρ::FunctionProduct
     R::B
-    A::Mat
-    tmp::Tmp
 end
 
 function DiagonalOperator(f)
     T = eltype(f)
     R,c = f.args
 
-    V = vandermonde(R)
+    DiagonalOperator(c, FunctionProduct{false}(R, R), R)
+end
 
-    L = if sum(bandwidths(V)) == 0
-        # Orthogonal case
-        V = V[indices(R,2),:]
-        uniform = all(isone, V.data)
-        if uniform
-            DiagonalOperator(c, I, R, Diagonal(c), nothing)
-        else
-            DiagonalOperator(c, Diagonal(V), R, Diagonal(similar(c, T)), nothing)
-        end
-    elseif R isa BSplineOrRestricted
-        # Non-orthogonal case
-        A = Matrix(undef, R, R, T)
-        DiagonalOperator(c, V, R, A, V*c)
-    else
-        throw(ArgumentError("Basis $(R) not yet supported"))
+Base.size(S::DiagonalOperator) = (length(S.ρ,ρ),length(S.ρ,ρ))
+Base.size(S::DiagonalOperator, i) = size(S)[i]
+Base.eltype(S::DiagonalOperator) = eltype(S.ρ)
+
+function copyto_if_different!(dst, src)
+    dst === src && return dst
+    copyto!(dst, src)
+end
+
+function Base.copyto!(o::DiagonalOperator, diag::AbstractVector)
+    copyto_if_different!(o.diag, diag)
+    o
+end
+
+function LinearAlgebra.mul!(y, L::DiagonalOperator, x,
+                            α::Number=true, β::Number=false)
+    copyto!(L.ρ, L.diag, x)
+    if iszero(β)
+        y .= false
+    elseif !isone(β)
+        lmul!(β, y)
     end
-    copyto!(L, c)
-    L
+    y .+= α .* L.ρ.ρ
 end
-
-Base.size(S::DiagonalOperator, args...) = size(S.A, args...)
-Base.eltype(S::DiagonalOperator) = eltype(S.A)
-
-function Base.copyto!(o::DiagonalOperator{<:Any,<:Any,<:UniformScaling}, diag::AbstractVector)
-    # Orthogonal, uniform
-    copyto!(o.diag, diag)
-    o
-end
-
-function Base.copyto!(o::DiagonalOperator{<:Any,<:Any,<:Diagonal}, diag::AbstractVector)
-    # Orthogonal, non-uniform
-    copyto!(o.diag, diag)
-    mul!(o.A.diag, o.V, o.diag)
-    o
-end
-
-function Base.copyto!(o::DiagonalOperator{<:Any,<:Any,<:Any,<:BSplineOrRestricted},
-                 diag::AbstractVector)
-    # Non-orthogonal (but not general case, only B-splines so far)
-    copyto!(o.diag, diag)
-    # Reconstruct function using Vandermonde matrix
-    mul!(o.tmp, o.V, diag)
-    # Compute matrix elements via quadrature (the basis function are
-    # resolved on the quadrature nodes, as is the function
-    # reconstruction).
-    overlap_matrix!(o.A, o.R', o.R, Diagonal(o.tmp))
-    o
-end
-
-LinearAlgebra.mul!(y, L::DiagonalOperator, x, α::Number=true, β::Number=false) =
-    mul!(y, L.A, x, α, β)
 
 Base.:(*)(L::DiagonalOperator, x) =
     LinearAlgebra.mul!(similar(x), L, x)

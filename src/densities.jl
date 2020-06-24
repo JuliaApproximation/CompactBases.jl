@@ -1,4 +1,4 @@
-struct Density{T,A,B,V,M,FT,GT}
+struct FunctionProduct{Conjugated,T,A,B,V,M,FT,GT}
     ρ::Vector{T}
     L::A
     LV::V
@@ -7,12 +7,15 @@ struct Density{T,A,B,V,M,FT,GT}
     C::M
     ftmp::FT
     gtmp::GT
+    FunctionProduct{Conjugated}(ρ::Vector{T}, L::A, LV::V, R::B, RV::V, C::M,
+                                ftmp::FT, gtmp::GT) where {Conjugated,T,A,B,V,M,FT,GT} =
+                                    new{Conjugated,T,A,B,V,M,FT,GT}(ρ, L, LV, R, RV, C, ftmp, gtmp)
 end
 
-function Density(f, g)
-    T = promote_type(eltype(f),eltype(g))
-    L,cf = f.args
-    R,cg = f.args
+const Density = FunctionProduct{true}
+
+function FunctionProduct{Conjugated}(R::BasisOrRestricted, L::BasisOrRestricted,
+                                     ::Type{T}=promote_type(eltype(R), eltype(L))) where {Conjugated,T}
     assert_compatible_bases(L,R)
 
     LV = vandermonde(L)
@@ -22,47 +25,67 @@ function Density(f, g)
         # Orthogonal case
         RV = RV[indices(R,2),:]
         uniform = all(isone, RV.data)
-        Density(Vector{T}(undef, size(R,2)),
-                L, I, R, I,
-                uniform ? I : RV,
-                uniform ? nothing : Vector{T}(undef, size(RV, 1)),
-                nothing)
+        FunctionProduct{Conjugated}(Vector{T}(undef, size(R,2)),
+                                    L, I, R, I,
+                                    uniform ? I : RV,
+                                    uniform ? nothing : Vector{T}(undef, size(RV, 1)),
+                                    nothing)
     else
         # General, non-orthogonal case
-        Density(Vector{T}(undef, size(R,2)),
-                L, LV, R, RV,
-                pinv(Matrix(RV)),
-                Vector{T}(undef, size(LV, 1)),
-                Vector{T}(undef, size(RV, 1)))
+        FunctionProduct{Conjugated}(Vector{T}(undef, size(R,2)),
+                                    L, LV, R, RV,
+                                    pinv(Matrix(RV)),
+                                    Vector{T}(undef, size(LV, 1)),
+                                    Vector{T}(undef, size(RV, 1)))
     end
+end
+
+function FunctionProduct{Conjugated}(f, g) where Conjugated
+    T = promote_type(eltype(f),eltype(g))
+    L,cf = f.args
+    R,cg = f.args
+
+    ρ = FunctionProduct{Conjugated}(L, R, T)
 
     copyto!(ρ, f, g)
 
     ρ
 end
 
-function Base.copyto!(ρ::Density, f::AbstractVector, g::AbstractVector)
+Base.eltype(ρ::FunctionProduct{<:Any,T}) where T = T
+
+function Base.copyto!(ρ::FunctionProduct{Conjugated}, f::AbstractVector, g::AbstractVector) where Conjugated
     # Non-orthogonal
     mul!(ρ.ftmp, ρ.RV, f)
-    conj!(ρ.ftmp)
+    Conjugated && conj!(ρ.ftmp)
     mul!(ρ.gtmp, ρ.LV, g)
     ρ.ftmp .*= ρ.gtmp
 
     mul!(ρ.ρ, ρ.C, ρ.ftmp)
 end
 
-function Base.copyto!(ρ::Density{<:Any,<:Any,<:Any,UniformScaling{Bool},<:AbstractMatrix}, f::AbstractVector, g::AbstractVector)
+function Base.copyto!(ρ::FunctionProduct{Conjugated,<:Any,<:Any,<:Any,UniformScaling{Bool},<:AbstractMatrix},
+                      f::AbstractVector, g::AbstractVector) where Conjugated
     # Orthogonal, non-uniform
-    ρ.ftmp .= conj.(f) .* g
+    if Conjugated
+        ρ.ftmp .= conj.(f) .* g
+    else
+        ρ.ftmp .= f .* g
+    end
     mul!(ρ.ρ, ρ.C, ρ.ftmp)
 end
 
-function Base.copyto!(ρ::Density{<:Any,<:Any,<:Any,UniformScaling{Bool},UniformScaling{Bool}}, f::AbstractVector, g::AbstractVector)
+function Base.copyto!(ρ::FunctionProduct{Conjugated,<:Any,<:Any,<:Any,UniformScaling{Bool},UniformScaling{Bool}},
+                      f::AbstractVector, g::AbstractVector) where Conjugated
     # Orthogonal, uniform
-    ρ.ρ .= conj.(f) .* g
+    if Conjugated
+        ρ.ρ .= conj.(f) .* g
+    else
+        ρ.ρ .= f .* g
+    end
 end
 
-function Base.copyto!(ρ::Density, f, g)
+function Base.copyto!(ρ::FunctionProduct, f, g)
     L,cf = f.args
     @assert L == ρ.L
     R,cg = g.args
