@@ -111,21 +111,9 @@ function norm_rot!(v)
     v
 end
 
-struct ShiftInvert{M}
-    A⁻¹::M
-end
-
-Base.size(S::ShiftInvert, args...) = size(S.A⁻¹, args...)
-Base.eltype(S::ShiftInvert) = eltype(S.A⁻¹)
-
-LinearAlgebra.mul!(y, S::ShiftInvert, x) =
-    ldiv!(y, S.A⁻¹, x)
-
 function diagonalize_hamiltonian(H, R::B, nev, σ; method=:arnoldi_shift_invert) where {B<:AbstractQuasiMatrix}
     A,target = if method == :arnoldi_shift_invert
-        S = R'R
-        shift = -σ*(any(>(0), bandwidths(S)) ? S : I)
-        ShiftInvert(factorize(H + shift)),LR()
+        ShiftAndInvert(H, R, σ), LR()
     else
         H, SR()
     end

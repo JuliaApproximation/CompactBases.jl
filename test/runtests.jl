@@ -36,4 +36,5 @@ include("derivative_accuracy_utils.jl")
     include("bsplines/runtests.jl")
     include("inner_products.jl")
     include("densities.jl")
+    include("linear_operators.jl")
 end

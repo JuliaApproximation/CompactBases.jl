@@ -98,11 +98,25 @@ Base.:(*)(L::DiagonalOperator, x) =
 
 # * Shift-and-invert
 
+"""
+    ShiftAndInvert(A⁻¹, B, temp)
+
+Represents a shifted-and-inverted operator, suitable for Krylov
+iterations when targetting an interior point of the eigenspectrum.
+`A⁻¹` is a factorization of the shifted operator and `B` is the metric
+matrix.
+"""
 struct ShiftAndInvert{TA,TB,TT}
     A⁻¹::TA
     B::TB
     temp::TT
 
+@doc raw"""
+    ShiftAndInvert(A, B[, σ=0])
+
+Construct the shifted-and-inverted operator corresponding to the
+eigenproblem ``(\mat{A}-σ\mat{B})\vec{x} = \lambda\mat{B}\vec{x}``.
+"""
     function ShiftAndInvert(A, B, σ::Number=0)
         A⁻¹ = factorize(A-σ*B)
         temp = Vector{eltype(A)}(undef, size(A,1))
@@ -110,12 +124,27 @@ struct ShiftAndInvert{TA,TB,TT}
         new{typeof(A⁻¹),typeof(B),typeof(temp)}(A⁻¹,B,temp)
     end
 
+@doc raw"""
+    ShiftAndInvert(A, ::UniformScaling[, σ=0])
+
+Construct the shifted-and-inverted operator corresponding to the
+eigenproblem ``(\mat{A}-σ\mat{I})\vec{x} = \lambda\vec{x}``.
+"""
     function ShiftAndInvert(A, ::UniformScaling, σ::Number=0)
         A⁻¹ = factorize(A-σ*I)
         new{typeof(A⁻¹), Nothing, Nothing}(A⁻¹, nothing, nothing)
     end
 end
 
+
+@doc raw"""
+    ShiftAndInvert(A, R[, σ=0])
+
+Construct the shifted-and-inverted operator corresponding to the
+eigenproblem ``(\mat{A}-σ\mat{B})\vec{x} = \lambda\mat{B}\vec{x}``,
+where ``\mat{B}`` is the suitable operator metric, depending on the
+`AbstractQuasiMatrix` `R` employed.
+"""
 ShiftAndInvert(A, R::BasisOrRestricted, σ::Number=0) =
     ShiftAndInvert(A, operator_metric(R), σ)
 

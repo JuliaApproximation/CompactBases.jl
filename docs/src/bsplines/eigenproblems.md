@@ -18,26 +18,7 @@ $[\mat{B}^{-1}(\mat{A}-\sigma\mat{B})]^{-1}\vec{V}_i=(\mat{A}-\sigma\mat{B})^{-1
 where $\sigma$ is a _shift_ in whose vicinity we hope to find the true
 eigenvalue.
 
-This can be accomplished with the aid of this `struct`:
-
-```julia
-struct ShiftAndInvert{TA,TB,TT}
-    A⁻¹::TA
-    B::TB
-    temp::TT
-end
-
-Base.size(S::ShiftAndInvert, args...) = size(S.A⁻¹, args...)
-Base.eltype(S::ShiftAndInvert) = eltype(S.A⁻¹)
-
-function LinearAlgebra.mul!(y,M::ShiftAndInvert,x)
-    mul!(M.temp, M.B, x)
-    ldiv!(y, M.A⁻¹, M.temp)
-end
-
-construct_linear_map(A,B,σ=0) =
-    ShiftAndInvert(factorize(A-σ*B),B,Vector{eltype(A)}(undef, size(A,1)))
-```
+This can be accomplished with the aid of [`ShiftAndInvert`](@ref).
 
 ## Non-relativistic hydrogen (Schrödinger equation)
 
@@ -113,8 +94,6 @@ Then, for `B=Blin` and `B=Bexp`, we do (considering only $\ell=0$):
 nev = 5
 σ = -0.5 # Target eigenvalue
 
-S = B'B
-
 D = Derivative(axes(B, 1))
 ∇² = B'D'D*B
 T = -∇²/2
@@ -123,7 +102,7 @@ V = Matrix(coulomb, B)
 
 H = T + V
 
-schurQR,history = partialschur(construct_linear_map(H, S, σ), nev=nev)
+schurQR,history = partialschur(ShiftAndInvert(H, R, σ), nev=nev)
 
 θ = schurQR.eigenvalues
 E = real(σ .+ inv.(θ))
