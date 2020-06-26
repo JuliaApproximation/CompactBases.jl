@@ -1,3 +1,10 @@
+@doc raw"""
+    FunctionProduct{Conjugated}
+
+Helper object to compute the expansion coefficients of ``ρ(x) \defd
+f^\circ(x)g(x)``, where ``f^\circ`` denotes that ``f`` may be
+conjugated, if so desired.
+"""
 struct FunctionProduct{Conjugated,T,A,B,V,M,FT,GT}
     ρ::Vector{T}
     L::A
@@ -12,8 +19,21 @@ struct FunctionProduct{Conjugated,T,A,B,V,M,FT,GT}
                                     new{Conjugated,T,A,B,V,M,FT,GT}(ρ, L, LV, R, RV, C, ftmp, gtmp)
 end
 
+"""
+    Density
+
+Type-alias for [`FunctionProduct`](@ref) where the first function is
+conjugated, as is necessary in complex linear algebra, when computing
+mutual densities.
+"""
 const Density = FunctionProduct{true}
 
+"""
+    FunctionProduct{Conjugated}(R, L[, T]) where {Conjugated,T}
+
+Construct a [`FunctionProduct`](@ref) for computing the product of two
+functions expanded over `R` and `L`, respectively.
+"""
 function FunctionProduct{Conjugated}(R::BasisOrRestricted, L::BasisOrRestricted,
                                      ::Type{T}=promote_type(eltype(R), eltype(L))) where {Conjugated,T}
     assert_compatible_bases(L,R)
@@ -40,6 +60,12 @@ function FunctionProduct{Conjugated}(R::BasisOrRestricted, L::BasisOrRestricted,
     end
 end
 
+"""
+    FunctionProduct{Conjugated}(f, g) where Conjugated
+
+Construct a [`FunctionProduct`](@ref) for computing the product of the
+two functions `f` and `g`.
+"""
 function FunctionProduct{Conjugated}(f, g) where Conjugated
     T = promote_type(eltype(f),eltype(g))
     L,cf = f.args
@@ -54,6 +80,12 @@ end
 
 Base.eltype(ρ::FunctionProduct{<:Any,T}) where T = T
 
+"""
+    copyto!(ρ::FunctionProduct{Conjugated}, f::AbstractVector, g::AbstractVector) where Conjugated
+
+Update the [`FunctionProduct`](@ref) `ρ` from the vectors of expansion
+coefficients, `f` and `g`.
+"""
 function Base.copyto!(ρ::FunctionProduct{Conjugated}, f::AbstractVector, g::AbstractVector) where Conjugated
     # Non-orthogonal
     mul!(ρ.ftmp, ρ.RV, f)
@@ -85,6 +117,11 @@ function Base.copyto!(ρ::FunctionProduct{Conjugated,<:Any,<:Any,<:Any,UniformSc
     end
 end
 
+"""
+    Base.copyto!(ρ::FunctionProduct, f, g)
+
+Update the [`FunctionProduct`](@ref) `ρ` from the functions `f` and `g`.
+"""
 function Base.copyto!(ρ::FunctionProduct, f, g)
     L,cf = f.args
     @assert L == ρ.L

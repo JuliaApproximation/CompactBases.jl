@@ -29,6 +29,8 @@
         ρ = Density(applied(*,R,cf), applied(*,R,cg))
         ch2 = ρ.ρ
 
+        @test eltype(ρ) == eltype(cf)
+
         if kind == :orthogonal_uniform
             @test ρ.LV == I
             @test ρ.RV == I

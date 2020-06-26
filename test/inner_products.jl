@@ -33,6 +33,9 @@
 
         @test f isa CompactBases.FuncVector
         @test isapprox(norm(f), 1/√2, rtol=1e-3)
+        f′ = deepcopy(f)
+        normalize!(f′)
+        @test isapprox(norm(f′), 1, rtol=1e-3)
 
         S = R'R
 
@@ -49,6 +52,6 @@
         @test g'g isa Real
         @test isapprox(g'g, 0.5, rtol=1e-3)
     end
-    
+
     @warn "Need to test inner products with restricted bases as well"
 end

@@ -206,26 +206,17 @@ which is a kind of potential that arises in Coulomb repulsion between
 two electrons.
 
 Now assume we know the expansion coefficients of ``V(x)`` _as a
-function_ in a certain basis, and we wish to turn it into _a matrix_
-that we can act on vectors of expansion coefficients of other
-functions. We can find this matrix using the helper object
+function_ in a certain basis, and we wish to turn it into _an
+operator_ that we can act on vectors of expansion coefficients of
+other functions. We can find this operator using the helper object
 [`DiagonalOperator`](@ref), which takes a vector of expansion
-coefficients and applies the Vandermonde matrix as outlined
-above. Additionally, it supports updating the matrix from a new set of
-expansion coefficients via `copyto!(::DiagonalOperator,
-::AbstractVector)`; this is useful if the vector of coefficients are
-updated in an iterative procedure.
-
-As noted in [Solving equations](@ref), when applying a matrix
-representation onto a vector of expansion coefficients, for
-non-orthogonal bases (and non-uniform finite-differences), we need to
-also apply the inverse of the metric (accessible for this case through
-[`CompactBases.operator_metric`](@ref)). This can be automated however
-using [`LinearOperator`](@ref), which will apply the metric when
-necessary.
-
-Using these two helper objects, it is very easy to construct the
-linear operator corresponding to ``V(r)``:
+coefficients and computes function products using
+[`FunctionProduct`](@ref) as outlined above. Additionally, it supports
+updating the operator from a new set of expansion coefficients via
+`copyto!(::DiagonalOperator, ::AbstractVector)`; this is useful if the
+vector of coefficients are updated in an iterative procedure.  Using
+this helper object, it is very easy to construct the linear operator
+corresponding to ``V(r)``:
 
 ```jldoctest
 julia> Z = 1.0
@@ -248,43 +239,65 @@ julia> rc = R \ identity.(r);
 
 julia> L = DiagonalOperator(applied(*, R, Vc));
 
-julia> Lop = LinearOperator(L, R);
-
-julia> Vr = Lop*rc
+julia> Vr = L*rc
 102-element Array{Float64,1}:
- -6.437293442739495e-13
-  3.798365453775743e-6
-  1.2424470533333464e-5
-  2.7121761289132286e-5
-  3.2090730029882946e-5
-  3.796988258561289e-5
-  4.492587091937226e-5
-  5.315583051008927e-5
-  6.289294839226428e-5
-  7.441303882230927e-5
-  8.804231534677851e-5
-  0.00010416656971041078
-  0.0001232420118403251
-  0.00014580806529367152
-  0.00017250246558852265
-  0.0002040790666006322
+ -7.391060759593551e-13
+  3.798365781660508e-6
+  1.2424470188558774e-5
+  2.7121761396970832e-5
+  3.2090729949950215e-5
+  3.7969882632299105e-5
+  4.492587089426764e-5
+  5.3155830522769964e-5
+  6.289294838594926e-5
+  7.441303882522786e-5
+  8.804231534560188e-5
+  0.00010416656971082224
+  0.00012324201184025276
+  0.0001458080652934851
+  0.00017250246558867294
+  0.00020407906660027916
+  0.00024142882900537449
+  0.0002856045425354325
+  0.00033784992337017024
+  0.0003996338290638074
+  0.00047269044731331535
+  0.0005590664411927001
+  0.0006611761720147723
   ⋮
-  4.161019867703719e-6
-  1.0650428611646796e-6
-  1.6261694973586933e-7
-  5.6081547869892246e-8
- -8.301480628382248e-9
-  8.10282119124874e-9
- -4.356767898816949e-9
-  2.566986109249515e-9
- -1.4952235572648308e-9
-  8.77464781994956e-10
- -5.23100919774441e-10
-  3.250499162326124e-10
- -2.2378205999333905e-10
-  1.932597252925329e-10
- -1.2790533015167562e-10
-  5.54754760432595e-11
+  0.0018732976205509439
+  0.0008808683138014906
+  0.00037668294021034587
+  0.00014695745488995618
+  5.063842777910832e-5
+  1.599013022980497e-5
+  4.103744132813787e-6
+  1.109651845760156e-6
+  1.2944992205824047e-7
+  8.022322694306368e-8
+ -2.5482483001496722e-8
+  2.014749642570805e-8
+ -1.2702692170923127e-8
+  8.30625314474844e-9
+ -5.430955853056595e-9
+  3.5902740375307133e-9
+ -2.4311284341540674e-9
+  1.7347709924495226e-9
+ -1.3749456882844004e-9
+  1.3170098300409254e-9
+ -8.910068563006749e-10
+  3.7529492654970227e-10
 ```
 
 ![Diagonal operators](figures/diagonal_operators.svg)
+
+
+### Reference
+
+```@docs
+DiagonalOperator
+DiagonalOperator(f)
+Base.copyto!(o::DiagonalOperator, diag::AbstractVector)
+LinearAlgebra.mul!(y, L::DiagonalOperator, x,
+                   α::Number=true, β::Number=false)
+```

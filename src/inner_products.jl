@@ -77,3 +77,7 @@ function LinearAlgebra.normalize!(v::FDOrFEDVRVecOrMat, p::Real=2)
 end
 
 LinearAlgebra.norm(v::SplineVector) = √(v'v)
+function LinearAlgebra.normalize!(v::SplineVector)
+    v.args[2][:] /= norm(v)
+    v
+end

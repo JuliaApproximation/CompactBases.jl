@@ -16,6 +16,16 @@ operator_metric(B::AbstractFiniteDifferences) =
 operator_metric(B::FEDVROrRestricted) = I
 
 # * Linear operator
+"""
+    LinearOperator(A, B⁻¹, temp)
+
+A helper object used to apply the action of a linear operator, whose
+matrix representation is given by `A`, in the basis whose metric
+inverse is `B⁻¹`. For orthogonal bases (such as
+e.g. [`FiniteDifferences`](@ref) and [`FEDVR`](@ref)), only
+multiplication by `A` is necessary, but non-orthonal bases (such as
+[`BSpline`](@ref)) necessitates the application of the metric inverse as well.
+"""
 struct LinearOperator{TA,TB,TT}
     A::TA
     B⁻¹::TB
@@ -50,17 +60,39 @@ LinearOperator(A, B) =
 LinearOperator(A, ::UniformScaling) =
     LinearOperator(A, nothing, nothing)
 
+"""
+    LinearOperator(A, R)
+
+Construct the linear operator whose matrix representation in the basis
+`R` is `A`, automatically deducing if application of the metric
+inverse is also necessary.
+"""
 LinearOperator(A, R::BasisOrRestricted) =
     LinearOperator(A, operator_metric(R))
 
 # * Diagonal operator
 
+"""
+    DiagonalOperator
+
+Helper structure that when acting on a function ``f(x)`` produces the
+product ``f(x)g(x)``, where ``g(x)`` is e.g. a potential. This is
+similar to `R'*QuasiDiagonal(g.(x))*R` in intent, but simplifies the
+case when ``g(x)`` needs to be updated, without computing a lot
+overlap integrals. This is accomplished by computing the
+[`FunctionProduct`](@ref) of the two functions directly.
+"""
 struct DiagonalOperator{Diag,FunctionProduct,B}
     diag::Diag
     ρ::FunctionProduct
     R::B
 end
 
+"""
+    DiagonalOperator(f)
+
+Construct [`DiagonalOperator`](@ref) from a function expansion `f`.
+"""
 function DiagonalOperator(f)
     T = eltype(f)
     R,c = f.args
@@ -68,7 +100,7 @@ function DiagonalOperator(f)
     DiagonalOperator(c, FunctionProduct{false}(R, R), R)
 end
 
-Base.size(S::DiagonalOperator) = (length(S.ρ,ρ),length(S.ρ,ρ))
+Base.size(S::DiagonalOperator) = (length(S.ρ.ρ),length(S.ρ.ρ))
 Base.size(S::DiagonalOperator, i) = size(S)[i]
 Base.eltype(S::DiagonalOperator) = eltype(S.ρ)
 
@@ -77,11 +109,23 @@ function copyto_if_different!(dst, src)
     copyto!(dst, src)
 end
 
+"""
+    copyto!(o::DiagonalOperator, diag::AbstractVector)
+
+Update the [`DiagonalOperator`](@ref) to represent multiplication by
+the function whose expansion coefficients are `diag`.
+"""
 function Base.copyto!(o::DiagonalOperator, diag::AbstractVector)
     copyto_if_different!(o.diag, diag)
     o
 end
 
+"""
+    mul!(y, L::DiagonalOperator, x[, α=1, β=0])
+
+Compute the action of the [`DiagonalOperator`](@ref) `L` on `x` and
+store the result in `y`.
+"""
 function LinearAlgebra.mul!(y, L::DiagonalOperator, x,
                             α::Number=true, β::Number=false)
     copyto!(L.ρ, L.diag, x)

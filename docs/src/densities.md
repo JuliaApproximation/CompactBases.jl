@@ -181,6 +181,18 @@ julia> norm(ρ.ρ - ch)
 
 ![Mutual densities](figures/mutual_densities.svg)
 
+## Reference
+
+```@docs
+FunctionProduct
+Density
+FunctionProduct{Conjugated}(R::CompactBases.BasisOrRestricted, L::CompactBases.BasisOrRestricted,
+                            ::Type{T}=promote_type(eltype(R), eltype(L))) where {Conjugated,T}
+FunctionProduct{Conjugated}(f, g) where Conjugated
+Base.copyto!(ρ::FunctionProduct{Conjugated}, f::AbstractVector, g::AbstractVector) where Conjugated
+Base.copyto!(ρ::FunctionProduct, f, g)
+```
+
 ## Bibliography
 
 [^moerken1991]:   K. Mørken (1991). Some Identities for Products and Degree Raising of Splines. Constructive Approximation, 7(1), 195–208. <http://dx.doi.org/10.1007/bf01888153>

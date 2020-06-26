@@ -228,9 +228,8 @@ function diagonal_operators()
     rc = R \ identity.(r);
 
     L = DiagonalOperator(applied(*, R, Vc));
-    Lop = LinearOperator(L, R);
 
-    Vr = Lop*rc
+    Vr = L*rc
 
     Vr_exact = rr .* V.(rr)
 
@@ -256,9 +255,8 @@ function diagonal_operators()
                 rc = R \ identity.(r)
 
                 L = DiagonalOperator(applied(*, R, Vc))
-                Lop = LinearOperator(L, R)
 
-                Vr = Lop*rc
+                Vr = L*rc
                 χ = R[rr,:]
                 loglog(rr, abs.(χ*Vr - Vr_exact), label=label)
             end

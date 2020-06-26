@@ -76,7 +76,7 @@ export AbstractFiniteDifferences,
     BSpline,
     ArbitraryKnotSet, LinearKnotSet, ExpKnotSet,
     order, numintervals, numfunctions, nonempty_intervals,
-    centers, vandermonde, Density,
+    centers, vandermonde, FunctionProduct, Density,
     LinearOperator, DiagonalOperator, ShiftAndInvert
 
 end # module
