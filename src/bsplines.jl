@@ -266,7 +266,7 @@ function Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, B::BSplineOrRestr
         Tridiagonal(dl, d, du)
     else
         ij = first(indices(B,2)) - first(indices(A,2))
-        BandedMatrix{T}(undef, (m,n), (k-1+ij,k-1-ij))
+        BandedMatrix{U}(undef, (m,n), (k-1+ij,k-1-ij))
     end
 end
 

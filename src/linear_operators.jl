@@ -97,7 +97,7 @@ function DiagonalOperator(f)
     T = eltype(f)
     R,c = f.args
 
-    DiagonalOperator(c, FunctionProduct{false}(R, R), R)
+    DiagonalOperator(c, FunctionProduct{false}(R, R, T), R)
 end
 
 Base.size(S::DiagonalOperator) = (length(S.ρ.ρ),length(S.ρ.ρ))

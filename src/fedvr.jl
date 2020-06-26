@@ -363,10 +363,11 @@ end
 
 # * Function interpolation
 
-function Base.:(\ )(B::FEDVR{T}, f::BroadcastQuasiArray) where T
+function Base.:(\ )(B::FEDVR, f::BroadcastQuasiArray)
     axes(f,1) == axes(B,1) ||
         throw(DimensionMismatch("Function on $(axes(f,1).domain) cannot be interpolated over basis on $(axes(B,1).domain)"))
 
+    T = promote_type(eltype(B), eltype(f))
     v = zeros(T, size(B,2))
     for i ∈ 1:nel(B)
         @. v[B.elems[i]] += B.wⁱ[i]*f[@elem(B,x,i)]
@@ -375,7 +376,7 @@ function Base.:(\ )(B::FEDVR{T}, f::BroadcastQuasiArray) where T
     v
 end
 
-function Base.:(\ )(B::RestrictedFEDVR{T}, f::BroadcastQuasiArray) where T
+function Base.:(\ )(B::RestrictedFEDVR, f::BroadcastQuasiArray)
     axes(f,1) == axes(B,1) ||
         throw(DimensionMismatch("Function on $(axes(f,1).domain) cannot be interpolated over basis on $(axes(B,1).domain)"))
 
@@ -384,6 +385,7 @@ function Base.:(\ )(B::RestrictedFEDVR{T}, f::BroadcastQuasiArray) where T
     a,b = first(is),last(is)
 
     n = size(B′,2)
+    T = promote_type(eltype(B), eltype(f))
     v = zeros(T, size(B,2))
     for i ∈ elements(B)
         sel = B′.elems[i]
