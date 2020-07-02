@@ -8,5 +8,4 @@ import CompactBases: nel, complex_rotate, real_locs
     include("inner_products.jl")
     include("function_interpolation.jl")
     include("derivatives.jl")
-    include("densities.jl")
 end
