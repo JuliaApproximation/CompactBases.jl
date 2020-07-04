@@ -26,6 +26,7 @@ FastGaussQuadrature = "0.4"
 FillArrays = "0.8"
 Formatting = "0.4"
 IntervalSets = "0.5.1"
+LazyArrays = "0.16"
 julia = "1.4"
 
 [extras]
