@@ -46,7 +46,8 @@ end
     B = FEDVR(range(0,stop=20,length=71), 10)
     C = FEDVR(range(0,stop=20,length=71), 10, t₀=10.0, ϕ=π/3)
     @test occursin("FEDVR{Float64} basis with 70 elements on 0.0..20.0", string(B))
-    @test occursin("FEDVR{Complex{Float64}} basis with 70 elements on 0.0..20.0 with ECS @ 60.00° starting at 10", string(C))
+    Ts = string(ComplexF64)
+    @test occursin("FEDVR{$(Ts)} basis with 70 elements on 0.0..20.0 with ECS @ 60.00° starting at 10.00", string(C))
 end
 
 @testset "Element access" begin

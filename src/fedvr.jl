@@ -103,7 +103,7 @@ function show(io::IO, B::FEDVR{T}) where T
     if T <: Complex
         ics = B.t₀ <= first(B.t)
         rot = printfmt(io, " with {1:s} @ {2:0.2f}°", ics ? "ICS" : "ECS", rad2deg(angle(B.eiϕ)))
-        !ics && printfmt(io, " starting at {1:f}", B.t₀)
+        !ics && printfmt(io, " starting at {1:0.2f}", B.t₀)
     end
 end
 
