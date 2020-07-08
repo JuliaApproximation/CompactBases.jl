@@ -5,6 +5,8 @@ using PrettyTables
 using ProgressMeter
 using UnicodePlots
 
+using RollingFunctions
+
 function test_derivatives(R::AbstractQuasiMatrix,
                           f::Function, g::Function, h::Function)
     r = axes(R,1)
@@ -38,6 +40,23 @@ function test_derivatives(R::AbstractQuasiMatrix,
     R,fv,gv,hv,hv′,δgv,δhv,δhv′
 end
 
+function estimate_convergence_rate(ρ, ϵ)
+    i = findall(!iszero, ϵ)
+    x = log10.(ρ[i])
+    y = log10.(abs.(ϵ[i]))
+
+    f = (x,y) -> ([x ones(length(x))] \ y)[1]
+
+    # Find all slopes for consecutive groups of three errors
+    slopes = rolling(f, x, y, 3)
+    e = findfirst(s -> s < 0, slopes)
+    if e !== nothing && e > 5
+        slopes = slopes[1:max(1,e-1)]
+    end
+
+    maximum(slopes)
+end
+
 function error_slopes(hs, ϵ, names, verbosity=0)
     loghs = log10.(hs)
     logϵ = log10.(abs.(ϵ))
@@ -45,11 +64,7 @@ function error_slopes(hs, ϵ, names, verbosity=0)
 
     slopes = zeros(n)
     for j = 1:n
-        # To avoid the effect of round-off errors on the order
-        # estimation.
-        i = argmin(abs.(ϵ[:,j]))
-
-        slopes[j] = ([loghs[1:i] ones(i)] \ logϵ[1:i,j])[1]
+        slopes[j] = estimate_convergence_rate(hs, ϵ[:,j])
     end
 
     if verbosity > 0
