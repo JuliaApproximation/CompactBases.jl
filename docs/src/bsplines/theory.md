@@ -270,7 +270,7 @@ $$\begin{equation}
 \operator{L}f = g,
 \end{equation}$$
 
-where $\operator{L}$ is a linear functional, we can solve the equation
+where $\operator{L}$ is a linear operator, we can solve the equation
 approximately by expanding $f$ and $g$ in terms of B-splines:
 
 $$\begin{equation}
@@ -294,7 +294,7 @@ $$\begin{equation}
 
 The right-hand side is trivially in the space $\space{P}_{t,k}$,
 whereas is not necessary true for the left-hand side, i.e. the
-functional $\operator{L}$ may take $f$ out of the space. We can
+operator $\operator{L}$ may take $f$ out of the space. We can
 project the equation into the space $\space{P}_{t,k}$ by
 left-multiplying by the projector $BB^H$:
 

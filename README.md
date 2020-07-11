@@ -42,7 +42,7 @@ function test_basis(B)
     # This is the continuous axis
     x = axes(B,1)
 
-    # This corresponds to a functional L whose action on a function
+    # This corresponds to a operator L whose action on a function
     # f(x) is defined as Lf(x) = sin(2πx)*f(x). In physics this is a
     # potential.
     @info "Sine operator"
