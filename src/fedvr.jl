@@ -1,7 +1,7 @@
 # * Basis construction
 
 struct FEDVR{T,R<:Real,O<:AbstractVector} <: Basis{T}
-    t::AbstractVector{R}
+    t::Vector{R}
     order::O
     i₀::Int
     t₀::R
