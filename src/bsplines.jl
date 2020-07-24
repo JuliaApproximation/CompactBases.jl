@@ -288,6 +288,8 @@ end
     end
 end
 
+metric(B::BSpline) = B.S
+
 # * Diagonal operators
 
 @materialize function *(Ac::AdjointBSplineOrRestricted,

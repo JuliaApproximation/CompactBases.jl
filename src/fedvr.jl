@@ -201,6 +201,8 @@ inverse_weight(B::FEDVR, j) = B.n[j]
 inverse_weights(B::FEDVR) = B.n
 
 vandermonde(B::FEDVR) = BandedMatrix(0 => B.n)
+metric(B::FEDVROrRestricted{T}) where T = Diagonal(Ones{T}(size(B,2)))
+metric_shape(B::FEDVROrRestricted) = Diagonal
 
 # * Basis functions
 

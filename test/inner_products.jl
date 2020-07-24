@@ -4,7 +4,13 @@
     N = ceil(Int, rmax/ρ)
     k = 7
 
-    @testset "$(grid_type)" for grid_type = [:fd, :sfd, :implicit_fd, :fedvr, :bsplines]
+    @testset "$(grid_type)" for (grid_type,MS,MatElMetric) = [
+        (:fd, Diagonal, ρ*I),
+        (:sfd, Diagonal, ρ*I),
+        (:implicit_fd, Diagonal, ρ*I),
+        (:fedvr, Diagonal, I),
+        (:bsplines, BandedMatrix, I)
+    ]
         R = if grid_type == :fd
             FiniteDifferences(N, ρ)
         elseif grid_type == :sfd
@@ -51,6 +57,10 @@
         @test isapprox(f'g, 0.0, atol=1e-14)
         @test g'g isa Real
         @test isapprox(g'g, 0.5, rtol=1e-3)
+
+        @test metric(R) == S
+        @test metric_shape(R) <: MS
+        @test matrix_element_metric(R) == MatElMetric
     end
 
     @warn "Need to test inner products with restricted bases as well"
