@@ -42,4 +42,29 @@
 
         @test ch2 ≈ ch atol=1e-14 rtol=rtol
     end
+
+    @testset "Pretty-printing" begin
+        R = FiniteDifferences(99, 0.1)
+        u = R*rand(size(R,2))
+        v = R*rand(size(R,2))
+        ρ = Density(u, v)
+        fp = FunctionProduct{false}(u, v)
+
+        @test string(ρ) == "99 .* 99 -> 99 FunctionProduct Float64, conjugated (<=> Density)"
+        @test string(fp) == "99 .* 99 -> 99 FunctionProduct Float64"
+
+        buf = IOBuffer()
+        show(buf, MIME"text/plain"(), ρ)
+        @test String(take!(buf)) == """
+            99 .* 99 -> 99 FunctionProduct Float64, conjugated (<=> Density); L .* R -> R, with
+              L: $(string(R))
+              R: $(string(R))"""
+
+        buf = IOBuffer()
+        show(buf, MIME"text/plain"(), fp)
+        @test String(take!(buf)) == """
+            99 .* 99 -> 99 FunctionProduct Float64; L .* R -> R, with
+              L: $(string(R))
+              R: $(string(R))"""
+    end
 end

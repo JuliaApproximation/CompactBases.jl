@@ -80,6 +80,22 @@ end
 
 Base.eltype(ρ::FunctionProduct{<:Any,T}) where T = T
 
+function Base.show(io::IO, ρ::FunctionProduct{Conjugated, T}) where {Conjugated,T}
+    mL = size(ρ.L,2)
+    mR = size(ρ.R,2)
+    mρ = length(ρ.ρ)
+    write(io, "$(mL) .* $(mR) -> $(mρ) FunctionProduct $T")
+    Conjugated && write(io, ", conjugated (<=> Density)")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", ρ::FunctionProduct)
+    show(io, ρ)
+    write(io, "; L .* R -> R, with\n  L: ")
+    show(io, ρ.L)
+    write(io, "\n  R: ")
+    show(io, ρ.R)
+end
+
 """
     copyto!(ρ::FunctionProduct{Conjugated}, f::AbstractVector, g::AbstractVector) where Conjugated
 
