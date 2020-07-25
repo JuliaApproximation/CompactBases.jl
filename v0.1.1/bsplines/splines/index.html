@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Spline creation &amp; evaluation · CompactBases.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><script src="../../assets/latex.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.svg" alt="CompactBases.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">CompactBases.jl</span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../overview/">Overview</a></li><li><a class="tocitem" href="../../inner_products/">Inner products &amp; norms</a></li><li><span class="tocitem">Operators</span><ul><li><a class="tocitem" href="../../diagonal_operators/">Diagonal operators</a></li></ul></li><li><a class="tocitem" href="../../densities/">Densities</a></li><li><span class="tocitem">Finite-differences</span><ul><li><a class="tocitem" href="../../fd_overview/">Overview</a></li><li><a class="tocitem" href="../../fd_non_uniform/">Non-uniform grids</a></li></ul></li><li><span class="tocitem">B-splines</span><ul><li><a class="tocitem" href="../theory/">Theory</a></li><li><input class="collapse-toggle" id="menuitem-7-2" type="checkbox" checked/><label class="tocitem" for="menuitem-7-2"><span class="docs-label">Usage</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../usage/">Basis creation</a></li><li><a class="tocitem" href="../knot_sets/">Knot sets</a></li><li><input class="collapse-toggle" id="menuitem-7-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-7-2-3"><span class="docs-label">Splines</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Spline creation &amp; evaluation</a></li><li><a class="tocitem" href="../function_approximation/">Function approximation</a></li></ul></li><li><a class="tocitem" href="../operators/">Approximating operators</a></li><li><input class="collapse-toggle" id="menuitem-7-2-5" type="checkbox"/><label class="tocitem" for="menuitem-7-2-5"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../differentiation/">Differentiating functions</a></li><li><a class="tocitem" href="../odes/">Ordinary differential equations</a></li><li><a class="tocitem" href="../eigenproblems/">Eigenproblems</a></li></ul></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">B-splines</a></li><li><a class="is-disabled">Usage</a></li><li><a class="is-disabled">Splines</a></li><li class="is-active"><a href>Spline creation &amp; evaluation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Spline creation &amp; evaluation</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/master/docs/src/bsplines/splines.md#L" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Spline-creation-and-evaluation-1"><a class="docs-heading-anchor" href="#Spline-creation-and-evaluation-1">Spline creation &amp; evaluation</a><a class="docs-heading-anchor-permalink" href="#Spline-creation-and-evaluation-1" title="Permalink"></a></h1><p>A spline is constructed as a linear combination of B-splines:</p><div>\[\begin{equation}
+\label{eqn:spline}
+s(x) = \sum_{j=1}^{n_{tk}} \B{j}{k}(x)c_j \defd B\vec{c}.
+\end{equation}\]</div><p>This is easily done as</p><pre><code class="language-julia">julia&gt; k = 4
+4
+
+julia&gt; t = LinearKnotSet(k, 0, 1, 5)
+12-element LinearKnotSet{4,4,4,Float64,StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}}:
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+ 0.8
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+
+julia&gt; B = BSpline(t)
+BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 4 (cubic) on 0.0..1.0 (5 intervals)
+
+julia&gt; size(B)
+(ContinuumArrays.AlephInfinity{1}(), 8)
+
+julia&gt; c = sin.(1:size(B,2))
+8-element Array{Float64,1}:
+  0.8414709848078965
+  0.9092974268256817
+  0.1411200080598672
+ -0.7568024953079282
+ -0.9589242746631385
+ -0.27941549819892586
+  0.6569865987187891
+  0.9893582466233818
+
+julia&gt; s = B*c
+Spline on BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 4 (cubic) on 0.0..1.0 (5 intervals)</code></pre><p>Naturally, we can evaluate the spline similarly to above:</p><pre><code class="language-julia">julia&gt; s[0.3]
+-0.28804656969083225
+
+julia&gt; s[0.3:0.1:0.8]
+6-element Array{Float64,1}:
+ -0.28804656969083225
+ -0.6408357079724976
+ -0.8250002333223664
+ -0.8119858486932346
+ -0.5856964504991202
+ -0.15856643671353235</code></pre><p>If many different splines sharing the same B-splines are going to be evaluated, it is usually more efficient to evaluate the basis functions once and reuse them:</p><pre><code class="language-julia">julia&gt; χ = B[0:0.25:1.0, :]
+5×8 SparseArrays.SparseMatrixCSC{Float64,Int64} with 14 stored entries:
+  [1, 1]  =  1.0
+  [2, 2]  =  0.105469
+  [2, 3]  =  0.576823
+  [3, 3]  =  0.0208333
+  [2, 4]  =  0.315104
+  [3, 4]  =  0.479167
+  [4, 4]  =  0.00260417
+  [2, 5]  =  0.00260417
+  [3, 5]  =  0.479167
+  [4, 5]  =  0.315104
+  [3, 6]  =  0.0208333
+  [4, 6]  =  0.576823
+  [4, 7]  =  0.105469
+  [5, 8]  =  1.0
+
+julia&gt; χ*c
+5-element Array{Float64,1}:
+  0.8414709848078965
+ -0.06366510061255656
+ -0.8250002333223664
+ -0.39601358159504896
+  0.9893582466233818</code></pre><p><img src="../../figures/bsplines/spline-1d.svg" alt="One-dimensional spline"/></p><p>It is then trivial to extend this to two dimensions:</p><pre><code class="language-julia">julia&gt; c̃ = [sin.(1:size(B,2)) tan.(1:size(B,2))]
+8×2 Array{Float64,2}:
+  0.841471   1.55741
+  0.909297  -2.18504
+  0.14112   -0.142547
+ -0.756802   1.15782
+ -0.958924  -3.38052
+ -0.279415  -0.291006
+  0.656987   0.871448
+  0.989358  -6.79971
+
+julia&gt; s̃ = B*c̃
+2d spline on BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 4 (cubic) on 0.0..1.0 (5 intervals)
+
+julia&gt; size(s̃)
+(ContinuumArrays.AlephInfinity{1}(), 2)</code></pre><p><img src="../../figures/bsplines/spline-2d.svg" alt="Two-dimensional spline"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../knot_sets/">« Knot sets</a><a class="docs-footer-nextpage" href="../function_approximation/">Function approximation »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 25 July 2020 00:32">Saturday 25 July 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
