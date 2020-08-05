@@ -93,11 +93,11 @@ end
 
 Construct [`DiagonalOperator`](@ref) from a function expansion `f`.
 """
-function DiagonalOperator(f)
+function DiagonalOperator(f; kwargs...)
     T = eltype(f)
     R,c = f.args
 
-    DiagonalOperator(c, FunctionProduct{false}(R, R, T), R)
+    DiagonalOperator(c, FunctionProduct{false}(R, R, T; kwargs...), R)
 end
 
 Base.size(S::DiagonalOperator) = (length(S.ρ.ρ),length(S.ρ.ρ))
@@ -139,6 +139,38 @@ end
 
 Base.:(*)(L::DiagonalOperator, x) =
     LinearAlgebra.mul!(similar(x), L, x)
+
+function Base.copyto!(M::AbstractMatrix, L::DiagonalOperator,
+                      x = L.R \ (r -> one(eltype(L.R))).(axes(L.R,1)))
+    copyto!(L.ρ, L.diag, x)
+    copyto!(M, L.ρ)
+    M
+end
+
+Base.similar(::Type{<:Diagonal}, L::DiagonalOperator) =
+    Diagonal(Vector{eltype(L)}(undef, size(L.R,2)))
+
+Base.similar(::Type{<:BandedMatrix}, L::DiagonalOperator) =
+    Matrix(undef, L.R, eltype(L))
+
+Base.similar(L::DiagonalOperator) =
+    similar(metric_shape(L.R), L)
+
+"""
+    Matrix(L::DiagonalOperator[, x])
+
+Compute the matrix representation of the [`DiagonalOperator`](@ref)
+`L`, optionally weighted by the function whose expansion coefficients
+are given by `x`.
+
+Note that this is allocating and potentially inefficient (especially
+in the case of non-orthogonal bases), and should thus not be used in
+compute-intense code. Furthermore, if you have a Julia function `f`
+corresponding to the diagonal operator, it is most likely more
+reasonable to take the `R'*QuasiDiagonal(f.(x))*R` approach instead.
+"""
+Matrix(L::DiagonalOperator, args...) =
+    copyto!(similar(L), L, args...)
 
 # * Shift-and-invert
 

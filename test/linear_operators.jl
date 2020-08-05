@@ -34,6 +34,41 @@
     end
 end
 
+@testset "Matricization of DiagonalOperators" begin
+    L = 1.0
+
+    N = 100
+
+    @testset "$(label)" for (label,R) in [
+        ("Finite-differences", FiniteDifferences(N, L/(N+1))),
+        ("Uniform, staggered finite-differences", StaggeredFiniteDifferences(N, L/(N-1/2))),
+        ("Non-uniform, staggered finite-differences", StaggeredFiniteDifferences(0.1, 0.2, 0.01, L)),
+        ("Implicit finite-differences", ImplicitFiniteDifferences(N, L/(N+1))),
+        ("FE-DVR", FEDVR(range(0, stop=L, length=N), 4)),
+        ("B-splines", BSpline(LinearKnotSet(7, 0, L, N)))
+    ]
+        r = axes(R, 1)
+
+        f = R \ exp.(-(r .- 0.5).^2/(2*0.04^2))
+        g = R \ (exp.(-(r .- 0.5).^2/(2*0.04^2)) .* r)
+
+        d = DiagonalOperator(applied(*, R, f))
+
+        o = R \ (r -> 1).(r)
+        ir = R \ identity.(r)
+
+        m = Matrix(d)
+        @test m isa (R isa BSpline ? BandedMatrix : Diagonal)
+        f′ = LinearOperator(m, R)*o
+        @test f ≈ f′
+
+        n = Matrix(d, ir)
+        @test n isa (R isa BSpline ? BandedMatrix : Diagonal)
+        g′ = LinearOperator(n, R)*o
+        @test g ≈ g′
+    end
+end
+
 @testset "ShiftAndInvert" begin
     L = 10.0
     N = 100

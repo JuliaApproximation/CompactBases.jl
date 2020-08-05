@@ -57,7 +57,7 @@ function FunctionProduct{Conjugated}(L::BasisOrRestricted, R::BasisOrRestricted,
     rnlhs = something(nlhs,1)
     rnrhs = something(nrhs,1)
     rnlhs == rnrhs || isone(rnlhs) || isone(rnrhs) ||
-        throw(DimensionMismatch("Cannot broadcast $(rnlhs) and $(rnrhs) to common size"))
+        throw(DimensionMismatch("Cannot broadcast $(rnlhs) LHS and $(rnrhs) RHS to common size"))
 
     w = if w == one
         I
@@ -193,3 +193,12 @@ function Base.copyto!(ρ::FunctionProduct, f, g)
 
     copyto!(ρ, cf, cg)
 end
+
+# Orthogonal, uniform or non-uniform
+Base.copyto!(M::Diagonal, ρ::FunctionProduct{<:Any,<:Any,<:Any,<:Any,<:Any,UniformScaling{Bool},<:Any}) =
+    mul!(M.diag, ρ.C, ρ.ρ)
+
+# Non-orthogonal (but not general case, only B-splines so far)
+Base.copyto!(M::AbstractMatrix,
+             ρ::FunctionProduct{<:Any,<:Any,<:Any,<:BSplineOrRestricted,<:BSplineOrRestricted}) =
+                 overlap_matrix!(M, ρ.L', ρ.R, Diagonal(ρ.tmp))

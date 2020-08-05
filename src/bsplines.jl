@@ -256,7 +256,7 @@ struct BSplineStyle <: AbstractQuasiArrayApplyStyle end
 
 # * Matrix construction
 
-function Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}=A, ::Type{U}=T) where {T,U}
+function Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}, ::Type{U}=T) where {T,U}
     m,n = size(A,2), size(B,2)
     k = max(order(A),order(B))
     if k == 2 && m == n
@@ -269,6 +269,9 @@ function Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, B::BSplineOrRestr
         BandedMatrix{U}(undef, (m,n), (k-1+ij,k-1-ij))
     end
 end
+
+Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, ::Type{U}=T) where {T,U} =
+    Matrix(undef, A, A, U)
 
 function Base.zeros(A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}=A, ::Type{U}=T) where {T,U}
     M = Matrix(undef, A, B, U)

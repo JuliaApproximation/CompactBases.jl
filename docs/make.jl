@@ -1,8 +1,8 @@
-using Documenter, CompactBases
+using Documenter, CompactBases, LinearAlgebra
 
 isdefined(Main, :NOPLOTS) && NOPLOTS || include("plots.jl")
 
-DocMeta.setdocmeta!(CompactBases, :DocTestSetup, :(using CompactBases); recursive=true)
+DocMeta.setdocmeta!(CompactBases, :DocTestSetup, :(using CompactBases, LinearAlgebra); recursive=true)
 makedocs(;
     modules=[CompactBases],
     format=Documenter.HTML(assets = ["assets/latex.js"],
