@@ -47,12 +47,8 @@ matrix elements exactly using Gauß–Legendre quadrature, but with high
 enough order and intelligent placement of the knots, we can get
 sufficient accuracy.
 
-Diagonal operators are projected into the B-spline space using the
-`Matrix` function:
-
-```@docs
-LinearAlgebra.Matrix
-```
+Diagonal operators are projected into the B-spline space using a
+`QuasiDiagonal`.
 
 As as example of the importance of knot placement, we study the action
 of the Coulomb operator $\operator{V}(x) = -1/x$ on the function
@@ -86,9 +82,10 @@ BSpline{Float64} basis with ExpKnotSet(Float64) of  on order k = 7 on 0,0.1..70.
 Then, for `B=Blin` and `B=Bexp`, we do the following:
 
 ```julia
+x = axes(B, 1)
 S = B'B
-f = B \ x -> x^2*exp(-x)
-V = Matrix(coulomb, B)
+f = B \ (x.^2 .* exp.(-x))
+V = B'*QuasiDiagonal(coulomb.(x))*B
 g̃ = S \ V*f
 ```
 
