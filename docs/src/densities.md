@@ -137,7 +137,10 @@ julia> cg = R \ g.(r);
 
 julia> ch = R \ h.(r); # Direct expansion of density for comparison
 
-julia> ρ = Density(applied(*,R,cf), applied(*,R,cg));
+julia> ρ = Density(applied(*,R,cf), applied(*,R,cg))
+77 .* 77 -> 77 FunctionProduct Float64, conjugated (<=> Density); L .* R -> R, with
+  L: BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
+  R: BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
 
 julia> ρ.ρ # Expansion coefficients computed via Vandermonde interpolation
 77-element Array{Float64,1}:
@@ -180,6 +183,94 @@ julia> norm(ρ.ρ - ch)
 ```
 
 ![Mutual densities](figures/mutual_densities.svg)
+
+We can also compute the mutual densities between multiple functions,
+as long as their matrices of expansions coefficients are
+broadcastable:
+
+```jldoctest
+julia> ρ = Density(applied(*,R,cf), applied(*,R,[cg 2cg]))
+77 .* (77, 2) -> (77, 2) FunctionProduct Float64, conjugated (<=> Density); L .* R -> R, with
+  L: BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
+  R: BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
+
+julia> ρ.ρ
+77×2 Array{Float64,2}:
+  2.59903e-6    5.19806e-6
+ -1.2089e-5    -2.4178e-5
+  0.0166505     0.033301
+  0.0860947     0.172189
+  0.222646      0.445291
+  0.284283      0.568566
+  0.0448715     0.0897431
+ -0.309758     -0.619517
+ -0.451362     -0.902724
+ -0.238165     -0.47633
+  0.163602      0.327204
+  0.434648      0.869296
+  0.373049      0.746099
+  0.0460473     0.0920946
+ -0.284693     -0.569387
+ -0.379763     -0.759526
+  ⋮
+  0.00272552    0.00545103
+  0.00152773    0.00305546
+ -0.000417842  -0.000835684
+ -0.0016586    -0.0033172
+ -0.0015285    -0.003057
+ -0.000416248  -0.000832496
+  0.000725014   0.00145003
+  0.00113385    0.0022677
+  0.000702377   0.00140475
+ -9.73144e-5   -0.000194629
+ -0.000654492  -0.00130898
+ -0.000654847  -0.00130969
+ -0.000424316  -0.000848633
+ -0.000207686  -0.000415372
+ -6.69584e-5   -0.000133917
+ -5.66922e-10  -1.13384e-9
+
+julia> ρ = Density(applied(*,R,[cf 2cf]), applied(*,R,[cg 2cg]))
+(77, 2) .* (77, 2) -> (77, 2) FunctionProduct Float64, conjugated (<=> Density); L .* R -> R, with
+  L: BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
+  R: BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
+
+julia> ρ.ρ
+77×2 Array{Float64,2}:
+  2.59903e-6    1.03961e-5
+ -1.2089e-5    -4.8356e-5
+  0.0166505     0.0666021
+  0.0860947     0.344379
+  0.222646      0.890583
+  0.284283      1.13713
+  0.0448715     0.179486
+ -0.309758     -1.23903
+ -0.451362     -1.80545
+ -0.238165     -0.952659
+  0.163602      0.654407
+  0.434648      1.73859
+  0.373049      1.4922
+  0.0460473     0.184189
+ -0.284693     -1.13877
+ -0.379763     -1.51905
+  ⋮
+  0.00272552    0.0109021
+  0.00152773    0.00611092
+ -0.000417842  -0.00167137
+ -0.0016586    -0.0066344
+ -0.0015285    -0.006114
+ -0.000416248  -0.00166499
+  0.000725014   0.00290006
+  0.00113385    0.0045354
+  0.000702377   0.00280951
+ -9.73144e-5   -0.000389258
+ -0.000654492  -0.00261797
+ -0.000654847  -0.00261939
+ -0.000424316  -0.00169727
+ -0.000207686  -0.000830745
+ -6.69584e-5   -0.000267834
+ -5.66922e-10  -2.26769e-9
+```
 
 ## Reference
 

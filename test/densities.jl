@@ -43,6 +43,49 @@
         @test ch2 ≈ ch atol=1e-14 rtol=rtol
     end
 
+    @testset "Multiple functions" begin
+        L = 6.0
+        N = 1000
+        ρ = L/(N+1)
+        @testset "$R" for R in [
+            FiniteDifferences(N, ρ),
+            StaggeredFiniteDifferences(0.01, 0.2, 0.1, L),
+            FEDVR(range(0, stop=L, length=20), 7)[:,2:end-1],
+            BSpline(LinearKnotSet(7, 0, L, 200))
+        ]
+            r = axes(R,1)
+            f = exp.(-(r .- L/2).^2/0.5)
+            gs = [
+                sin.(1π/L*r),
+                sin.(2π/L*r),
+                sin.(3π/L*r),
+                sin.(4π/L*r),
+                sin.(5π/L*r),
+                sin.(6π/L*r)
+            ]
+            w = r -> 1 / r
+
+            cf = R \ f
+            cgs = reduce(hcat, [R \ g for g in gs])
+            wr = w.(r)
+
+            u = applied(*, R, cf)
+            v = applied(*, R, cgs)
+
+            # One times many functions
+            ρuv = Density(u, v, w=w)
+            uv_refs = reduce(hcat, [R \ (f .* g .* wr) for g in gs])
+            @test ρuv.ρ ≈ uv_refs
+
+            # Many times many functions
+            ρvv = Density(v, v, w=w)
+            vv_refs = reduce(hcat, [R \ (g .* g .* wr) for g in gs])
+            @test ρvv.ρ ≈ vv_refs
+
+            @test_throws DimensionMismatch Density(applied(*, R, rand(size(R, 2), 2)), applied(*, R, rand(size(R, 2), 3)))
+        end
+    end
+
     @testset "Pretty-printing" begin
         R = FiniteDifferences(99, 0.1)
         u = R*rand(size(R,2))
@@ -66,5 +109,42 @@
             99 .* 99 -> 99 FunctionProduct Float64; L .* R -> R, with
               L: $(string(R))
               R: $(string(R))"""
+
+        u = R*rand(size(R,2), 1)
+        v = R*rand(size(R,2), 5)
+        ρ = Density(u, v)
+        @test string(ρ) == "(99, :) .* (99, :) -> (99, 5) FunctionProduct Float64, conjugated (<=> Density)"
+
+        u = R*rand(size(R,2), 5)
+        v = R*rand(size(R,2), 5)
+        ρ = Density(u, v)
+        @test string(ρ) == "(99, :) .* (99, :) -> (99, 5) FunctionProduct Float64, conjugated (<=> Density)"
+
+        R = BSpline(LinearKnotSet(7, 0, 6.0, 200))
+
+        u = R*rand(size(R,2))
+        v = R*rand(size(R,2), 5)
+        ρ = Density(u, v)
+        @test string(ρ) == "206 .* (206, 5) -> (206, 5) FunctionProduct Float64, conjugated (<=> Density)"
+
+        u = R*rand(size(R,2), 5)
+        v = R*rand(size(R,2))
+        ρ = Density(u, v)
+        @test string(ρ) == "(206, 5) .* 206 -> (206, 5) FunctionProduct Float64, conjugated (<=> Density)"
+
+        u = R*rand(size(R,2), 1)
+        v = R*rand(size(R,2), 5)
+        ρ = Density(u, v)
+        @test string(ρ) == "(206, 1) .* (206, 5) -> (206, 5) FunctionProduct Float64, conjugated (<=> Density)"
+
+        u = R*rand(size(R,2), 5)
+        v = R*rand(size(R,2), 1)
+        ρ = Density(u, v)
+        @test string(ρ) == "(206, 5) .* (206, 1) -> (206, 5) FunctionProduct Float64, conjugated (<=> Density)"
+
+        u = R*rand(size(R,2), 5)
+        v = R*rand(size(R,2), 5)
+        ρ = Density(u, v)
+        @test string(ρ) == "(206, 5) .* (206, 5) -> (206, 5) FunctionProduct Float64, conjugated (<=> Density)"
     end
 end
