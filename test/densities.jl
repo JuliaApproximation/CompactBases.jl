@@ -1,7 +1,7 @@
 @testset "Densities" begin
     f = x -> sin(2π*x)
     g = x -> x*exp(-x)
-    h = x -> f(x)*g(x)
+    h = x -> sin(2π*x)*x*exp(-x)
 
     rmin = 0.01
     rmax = 10.0
