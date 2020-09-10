@@ -73,7 +73,6 @@ end
 @materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
                         D::Derivative,
                         B::BasisOrRestricted{<:AbstractFiniteDifferences})
-    FiniteDifferencesStyle
     T -> begin
         derivative_matrix(T, Ac, B, 1)
     end
@@ -107,7 +106,6 @@ end
                         Dc::QuasiAdjoint{<:Any,<:Derivative},
                         D::Derivative,
                         B::BasisOrRestricted{<:AbstractFiniteDifferences})
-    FiniteDifferencesStyle
     T -> begin
         derivative_matrix(T, Ac, B, 2)
     end
@@ -171,13 +169,13 @@ implicit_derivative(::Type{T}, M, difforder) where T =
                        implicit_lhs(last(M.args), difforder),
                        implicit_coeff(T, difforder))
 
-materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
+materialize(M::MulQuasiArray{T, <:Any, <:Tuple{
     <:AdjointBasisOrRestricted{B},
     <:Derivative,
     <:BasisOrRestricted{B}}}) where {T,B<:ImplicitFiniteDifferences{T}} =
         implicit_derivative(T, M, 1)
 
-materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
+materialize(M::MulQuasiArray{T, <:Any, <:Tuple{
     <:AdjointBasisOrRestricted{B},
     <:QuasiAdjoint{T,<:Derivative},
     <:Derivative,

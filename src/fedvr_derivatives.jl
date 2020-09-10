@@ -65,7 +65,6 @@ derop!(A, B::FEDVROrRestricted, n::Integer) =
 @materialize function *(Ac::AdjointBasisOrRestricted{<:FEDVR},
                         D::Derivative,
                         B::BasisOrRestricted{<:FEDVR})
-    FEDVRStyle
     T -> begin
         Matrix(undef, B, T)
     end
@@ -82,7 +81,6 @@ end
                         Dc::QuasiAdjoint{<:Any,<:Derivative},
                         D::Derivative,
                         B::BasisOrRestricted{<:FEDVR})
-    FEDVRStyle
     T -> begin
         Matrix(undef, B, T)
     end

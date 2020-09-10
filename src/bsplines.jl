@@ -252,8 +252,6 @@ Base.show(io::IO, spline::SplineVector) =
 Base.show(io::IO, spline::SplineMatrix) =
     write(io, "$(size(spline, 2))d spline on $(spline.args[1])")
 
-struct BSplineStyle <: AbstractQuasiArrayApplyStyle end
-
 # * Matrix construction
 
 function Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}, ::Type{U}=T) where {T,U}
@@ -282,7 +280,6 @@ end
 # * Mass matrix
 @materialize function *(Ac::AdjointBSplineOrRestricted,
                         B::BSplineOrRestricted)
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
@@ -298,7 +295,6 @@ metric(B::BSpline) = B.S
 @materialize function *(Ac::AdjointBSplineOrRestricted,
                         D::QuasiDiagonal,
                         B::BSplineOrRestricted)
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
@@ -314,7 +310,6 @@ end
                         D::QuasiDiagonal,
                         E::QuasiDiagonal,
                         B::BSplineOrRestricted)
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
