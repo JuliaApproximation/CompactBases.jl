@@ -33,6 +33,12 @@
         ∇² = R'D'D*R
 
         for (sela,selb) in Iterators.product([1:10, 3:6, 8:10, 5:10, 4:5], [1:10, 3:6, 8:10, 5:10, 4:5])
+            # In case we have partially overlapping restrictions, the
+            # bandwidth will not be the full three-point stencil, and if we
+            # have no overlap at all, the bandwidth will be zero.
+            overlap = sela ∩ selb
+            expected_bandwidth = isempty(overlap) ? 0 : min(3, length(overlap)+1)
+
             Ra = R[:,sela]
             Rb = R[:,selb]
 
@@ -42,7 +48,7 @@
                 @test bandwidths(∂) == (1,1)
             end
             @test ∂ isa BandedMatrix
-            @test length(bandrange(∂)) == 3
+            @test length(bandrange(∂)) == expected_bandwidth
 
             ∂² = Ra'D'*D*Rb
             @test ∂² == Matrix(∇²)[sela,selb]
@@ -50,7 +56,7 @@
                 @test bandwidths(∂) == (1,1)
             end
             @test ∂² isa BandedMatrix
-            @test length(bandrange(∂²)) == 3
+            @test length(bandrange(∂²)) == expected_bandwidth
         end
     end
 
