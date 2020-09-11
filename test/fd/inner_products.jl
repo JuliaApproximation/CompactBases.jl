@@ -8,18 +8,16 @@
         for T in [Float64,ComplexF64]
             vv = rand(T, size(B,2))
             v = B*vv
-            lv = B ⋆ vv
+            
             normalize!(v)
 
             @test norm(v) ≈ 1.0
-            @test applied(*, v'.args..., v.args...) isa CompactBases.FDInnerProduct # {T,Float64,StaggeredFiniteDifferences{Float64,Int}}
+            @test *(v'.args..., v.args...) ≈ 1.0
             @test v'v ≈ 1.0
             @test vv'S*vv ≈ 1.0
 
-            lazyip = lv' ⋆ lv
-
-            @test lazyip isa CompactBases.LazyFDInnerProduct
-            @test materialize(lazyip) ≈ 1.0
+            # lazyip = Dot(v, v)
+            # @test materialize(lazyip) ≈ 1.0
         end
     end
 
@@ -39,11 +37,11 @@
         @test norm(ϕ) ≈ f*√(N*dr)
         @test norm(ϕ̃) ≈ f*√(n*dr)
 
-        @test ϕ'ϕ == (f^2*N*dr)
-        @test ϕ̃'ϕ̃ == (f^2*n*dr)
+        @test ϕ'ϕ ≈ (f^2*N*dr)
+        @test ϕ̃'ϕ̃ ≈ (f^2*n*dr)
 
-        @test apply(*, ϕ', ϕ) == (f^2*N*dr)
-        @test apply(*, ϕ̃', ϕ̃) == (f^2*n*dr)
+        @test apply(*, ϕ', ϕ) ≈ (f^2*N*dr)
+        @test apply(*, ϕ̃', ϕ̃) ≈ (f^2*n*dr)
 
         normalize!(ϕ)
         @test norm(ϕ) ≈ 1.0

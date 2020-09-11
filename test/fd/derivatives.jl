@@ -29,30 +29,28 @@
         r = axes(R, 1)
         D = Derivative(r)
 
-        ∇ = apply(*, R', D, R)
-        ∇² = apply(*, R', D', D, R)
+        ∇ = R'D*R
+        ∇² = R'D'D*R
 
         for (sela,selb) in Iterators.product([1:10, 3:6, 8:10, 5:10, 4:5], [1:10, 3:6, 8:10, 5:10, 4:5])
             Ra = R[:,sela]
             Rb = R[:,selb]
 
-            ∂ = apply(*, Ra', D, Rb)
+            ∂ = Ra'D*Rb
             @test ∂ == Matrix(∇)[sela,selb]
             if sela == selb
-                @test ∂ isa Tridiagonal
-            else
-                @test ∂ isa BandedMatrix
-                @test length(bandrange(∂)) == 3
+                @test bandwidths(∂) == (1,1)
             end
+            @test ∂ isa BandedMatrix
+            @test length(bandrange(∂)) == 3
 
-            ∂² = apply(*, Ra', D', D, Rb)
+            ∂² = Ra'D'*D*Rb
             @test ∂² == Matrix(∇²)[sela,selb]
             if sela == selb
-                @test ∂² isa SymTridiagonal
-            else
-                @test ∂² isa BandedMatrix
-                @test length(bandrange(∂²)) == 3
+                @test bandwidths(∂) == (1,1)
             end
+            @test ∂² isa BandedMatrix
+            @test length(bandrange(∂²)) == 3
         end
     end
 
@@ -71,7 +69,7 @@
                 0,0
             end
 
-            ∂ = apply(*, R', D, R)
+            ∂ = R'D*R
             @test ∂ isa CompactBases.ImplicitDerivative
 
             @test ∂.Δ isa Tridiagonal
@@ -86,7 +84,7 @@
             @test all(∂.M.ev .≈ 1/6)
 
 
-            ∂² = apply(*, R', D', D, R)
+            ∂² = R'D'D*R
             @test ∂ isa CompactBases.ImplicitDerivative
 
             @test ∂².Δ isa SymTridiagonal

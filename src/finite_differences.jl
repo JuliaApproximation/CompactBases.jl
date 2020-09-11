@@ -114,17 +114,6 @@ const FDMatrixElement{T,B<:FiniteDifferencesOrRestricted,M<:AbstractMatrix,V<:Ab
                                     <:B,<:M,<:QuasiAdjoint{<:Any,<:B},
                                     <:B,<:V}}}
 
-const FDInnerProduct{T,U,B<:FiniteDifferencesOrRestricted{U},V1<:AbstractVector{T},V2<:AbstractVector{T}} =
-    Mul{<:Any, <:Tuple{<:Adjoint{<:Any,<:V1},<:QuasiAdjoint{<:Any,<:B},<:B,<:V2}}
-
-const LazyFDInnerProduct{FD<:FiniteDifferencesOrRestricted} = Mul{<:Any,<:Tuple{
-    <:Mul{<:Any, <:Tuple{
-        <:Adjoint{<:Any,<:AbstractVector},
-        <:QuasiAdjoint{<:Any,<:FD}}},
-    <:Mul{<:Any, <:Tuple{
-        <:FD,
-        <:AbstractVector}}}}
-
 # * Mass matrix
 
 @simplify function *(Ac::QuasiAdjoint{<:Any,<:FiniteDifferencesOrRestricted}, B::FiniteDifferencesOrRestricted)

@@ -14,7 +14,7 @@ using BlockBandedMatrices
 using SparseArrays
 
 using LazyArrays
-import LazyArrays: materialize
+import LazyArrays: materialize, Dot
 using FillArrays
 
 using ArnoldiMethod
