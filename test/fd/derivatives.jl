@@ -35,8 +35,6 @@
         for (sela,selb) in Iterators.product([1:10, 3:6, 8:10, 5:10, 4:5], [1:10, 3:6, 8:10, 5:10, 4:5])
             Ra = R[:,sela]
             Rb = R[:,selb]
-            @test LazyArrays.ApplyStyle(*, typeof(Ra'), typeof(D), typeof(Rb)) ==
-                CompactBases.FiniteDifferencesStyle()
 
             ∂ = apply(*, Ra', D, Rb)
             @test ∂ == Matrix(∇)[sela,selb]

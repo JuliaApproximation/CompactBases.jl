@@ -39,7 +39,7 @@ materialization of [`Applied`](@ref) objects:
 
 - `similar` which usually returns a suitable matrix
 
-- `materialize` which makes use of the above functions
+- `LazyArrays._simplify` which makes use of the above functions
 
 # Example
 
@@ -84,6 +84,7 @@ macro materialize(expr)
 
     factor_types = :(<:Tuple{})
     factor_names = :(())
+    factors = Vector{Expr}()
 
     # Generate Applied signature
     for arg in expr.args[1].args[2:end]
@@ -92,6 +93,7 @@ macro materialize(expr)
         arg_name, arg_typ = arg.args
         push!(factor_types.args[1].args, :(<:$(arg_typ)))
         push!(factor_names.args, arg_name)
+        push!(factors, :($(arg_name)::$(arg_typ)))
     end
     Msig = :(QuasiArrays.ApplyQuasiArray{<:Any, <:Any, typeof($op), $(factor_types)})
 
@@ -110,8 +112,12 @@ macro materialize(expr)
 
         $(copytos!...)
 
-        LazyArrays.materialize(applied_obj::$Msig) =
+        LazyArrays.simplifiable(::typeof($op), $(factors...)) = Val(true)
+
+        function LazyArrays._simplify(::typeof($op), $(factors...))
+            applied_obj = ApplyQuasiArray($op, $(factor_names.args...))
             copyto!(similar(applied_obj, eltype(applied_obj)), applied_obj)
+        end
     end
     esc(f)
 end
