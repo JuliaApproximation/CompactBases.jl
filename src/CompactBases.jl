@@ -4,7 +4,7 @@ import Base: eltype, axes, size, ==, getindex, checkbounds, copyto!, similar, sh
 import Base.Broadcast: materialize
 
 using ContinuumArrays
-import ContinuumArrays: Basis, ℵ₁, Derivative, Inclusion, @simplify,
+import ContinuumArrays: Basis, ℵ₁, Derivative, Inclusion, @simplify, simplifiable, _simplify,
     AbstractQuasiArrayApplyStyle
 
 using QuasiArrays

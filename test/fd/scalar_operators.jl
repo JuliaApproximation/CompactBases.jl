@@ -54,8 +54,6 @@ end
         x = QuasiDiagonal(r)
 
         apply_obj = applied(*, R', x, R)
-        @test LazyArrays.ApplyStyle(*, typeof(R'), typeof(x), typeof(R)) ==
-            CompactBases.FiniteDifferencesStyle()
 
         A = apply(*, R', x, R)
         @test A isa Diagonal
