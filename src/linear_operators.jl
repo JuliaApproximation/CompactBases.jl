@@ -6,11 +6,11 @@ operator_metric(B) = B'B
 # However, for uniform finite-differences, the coefficients coincide
 # with the function value at the nodes, hence we should /not/ apply
 # the metric.
-operator_metric(::Uniform,     ::AbstractFiniteDifferences) = I
+operator_metric(::Uniform,     ::FiniteDifferencesOrRestricted) = I
 # For non-uniform finite-differences, we should, however.
-operator_metric(::NonUniform, B::AbstractFiniteDifferences) = I
+operator_metric(::NonUniform, B::FiniteDifferencesOrRestricted) = I
 
-operator_metric(B::AbstractFiniteDifferences) =
+operator_metric(B::FiniteDifferencesOrRestricted) =
     operator_metric(distribution(B), B)
 
 operator_metric(B::FEDVROrRestricted) = I
