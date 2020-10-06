@@ -31,6 +31,7 @@ end
 include("derivative_accuracy_utils.jl")
 
 @testset "CompactBases" begin
+    include("restricted_bases.jl")
     include("fd/runtests.jl")
     include("fedvr/runtests.jl")
     include("bsplines/runtests.jl")

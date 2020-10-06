@@ -86,6 +86,8 @@ vandermonde(::NonUniform, B::AbstractFiniteDifferences) =
 
 vandermonde(B::AbstractFiniteDifferences) = vandermonde(distribution(B), B)
 
+metric_shape(B::FiniteDifferencesOrRestricted) = Diagonal
+
 # * Types
 
 const FDArray{T,N,B<:FiniteDifferencesOrRestricted} = FuncArray{T,N,B}
