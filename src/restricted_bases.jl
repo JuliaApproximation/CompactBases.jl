@@ -41,8 +41,13 @@ end
 
 function combined_restriction(A,B)
     lsel,rsel = combined_restriction_selection(A,B)
-    l = lsel[1]-rsel[1]
-    BandedMatrices._BandedMatrix(Ones{Int}(1,size(B,2)), axes(A,2), l,-l)
+    l,u,r = if !isempty(lsel)
+        l = lsel[1]-rsel[1]
+        l, -l, 1
+    else
+        -1, -1, 0
+    end
+    BandedMatrices._BandedMatrix(Ones{Int}(r,size(B,2)), axes(A,2), l,u)
 end
 
 function show(io::IO, B̃::RestrictedQuasiArray{<:Any,2})

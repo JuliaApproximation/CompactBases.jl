@@ -3,7 +3,7 @@
         (FEDVR(range(0, stop=1.0, length=30), 6), "FE-DVR")
         (StaggeredFiniteDifferences(100, 0.1), "Finite-differences")
     ]
-        for (A,B) in [(R,R), (R,R[:,6:20]), (R[:,6:20],R[:,3:80])]
+        for (A,B) in [(R,R), (R,R[:,6:20]), (R[:,6:20],R[:,3:80]), (R[:,6:20],R[:,30:80])]
             rA = CompactBases.restriction(A)
             rB = CompactBases.restriction(B)
 
