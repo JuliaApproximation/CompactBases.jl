@@ -14,7 +14,7 @@
             @test norm(v) ≈ 1.0
             @test applied(*, v'.args..., v.args...) isa CompactBases.FDInnerProduct # {T,Float64,StaggeredFiniteDifferences{Float64,Int}}
             @test v'v ≈ 1.0
-            @test vv'S*vv ≈ 1.0
+            @test dot(vv,S,vv) ≈ 1.0
 
             lazyip = lv' ⋆ lv
 
