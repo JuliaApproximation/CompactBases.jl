@@ -1,46 +1,48 @@
 @testset "Densities" begin
-    f = x -> sin(2π*x)
-    g = x -> x*exp(-x)
-    h = x -> sin(2π*x)*x*exp(-x)
+    @testset "Single functions" begin
+        rmin = 0.01
+        rmax = 10.0
+        δr = 0.05
+        N = ceil(Int, rmax/δr)
+        k = 7
+        Nn = 71
 
-    rmin = 0.01
-    rmax = 10.0
-    ρ = 0.05
-    N = ceil(Int, rmax/ρ)
-    k = 7
-    Nn = 71
+        δrmin=rmin
+        δrmax=0.5
+        α=0.01
 
-    ρmin=rmin
-    ρmax=0.5
-    α=0.01
+        @testset "$R" for (R,kind,rtol) in [
+            (FiniteDifferences(N, δr), :orthogonal_uniform, 1e-14),
+            (StaggeredFiniteDifferences(δrmin, δrmax, α, rmax, 0.0), :orthogonal_non_uniform, 1e-14),
+            (FEDVR(range(0, stop=rmax, length=Nn), k), :orthogonal_non_uniform, 1e-14),
+            (BSpline(LinearKnotSet(k, 0, rmax, Nn)), :non_orthogonal, 1e-5),
+        ]
+            f = x -> sin(2π*x)
+            g = x -> x*exp(-x)
+            h = x -> sin(2π*x)*x*exp(-x)
 
-    @testset "$R" for (R,kind,rtol) in [
-        (FiniteDifferences(N, ρ), :orthogonal_uniform, 1e-14),
-        (StaggeredFiniteDifferences(ρmin, ρmax, α, rmax, 0.0), :orthogonal_non_uniform, 1e-14),
-        (FEDVR(range(0, stop=rmax, length=Nn), k), :orthogonal_non_uniform, 1e-14),
-        (BSpline(LinearKnotSet(k, 0, rmax, Nn)), :non_orthogonal, 1e-5),
-    ]
-        r = axes(R,1)
+            r = axes(R,1)
 
-        cf = R \ f.(r)
-        cg = R \ g.(r)
-        ch = R \ h.(r)
+            cf = R \ f.(r)
+            cg = R \ g.(r)
+            ch = R \ h.(r)
 
-        ρ = Density(applied(*,R,cf), applied(*,R,cg))
-        ch2 = ρ.ρ
+            ρ = Density(applied(*,R,cf), applied(*,R,cg))
+            ch2 = ρ.ρ
 
-        @test eltype(ρ) == eltype(cf)
+            @test eltype(ρ) == eltype(cf)
 
-        if kind == :orthogonal_uniform
-            @test ρ.LV == I
-            @test ρ.RV == I
-            @test ρ.C == I
-        elseif kind == :orthogonal_non_uniform
-            @test ρ.LV == I
-            @test ρ.RV == I
+            if kind == :orthogonal_uniform
+                @test ρ.LV == I
+                @test ρ.RV == I
+                @test ρ.C == I
+            elseif kind == :orthogonal_non_uniform
+                @test ρ.LV == I
+                @test ρ.RV == I
+            end
+
+            @test ch2 ≈ ch atol=1e-14 rtol=rtol
         end
-
-        @test ch2 ≈ ch atol=1e-14 rtol=rtol
     end
 
     @testset "Multiple functions" begin
@@ -83,6 +85,43 @@
             @test ρvv.ρ ≈ vv_refs
 
             @test_throws DimensionMismatch Density(applied(*, R, rand(size(R, 2), 2)), applied(*, R, rand(size(R, 2), 3)))
+        end
+    end
+
+    @testset "Restricted bases" begin
+        rmin = 0.0
+        rmax = 10.0
+        δr = 0.05
+        N = ceil(Int, rmax/δr)
+        k = 7
+        Nn = 71
+
+        δrmin=0.01
+        δrmax=0.5
+        α=0.01
+
+        f = x -> sinpi(x/rmax)
+        g = x -> cospi(x/rmax)
+        @testset "$(label)" for (w,label) in [(one,"Unweighted"),(exp,"Weighted")]
+            h = x -> f(x)*w(x)*g(x)
+
+            @testset "$R" for (R,rtol) in [
+                (FiniteDifferences(N, δr), 1e-15),
+                (StaggeredFiniteDifferences(δrmin, δrmax, α, rmax, 0.0), 1e-15),
+                (FEDVR(range(0, stop=rmax, length=Nn), k), 1e-15),
+                (BSpline(LinearKnotSet(k, 0, rmax, Nn)), 1e-14),
+            ]
+                display(R)
+                R̃ = R[:,1:ceil(Int, size(R,2))]
+
+                r = axes(R̃,1)
+
+                u = R̃ \ f.(r)
+                v = R̃ \ g.(r)
+
+                ρ = Density(applied(*, R̃, u), applied(*, R̃, v), w=w)
+                @test ρ.ρ ≈ (R̃ \ h.(r)) rtol=rtol
+            end
         end
     end
 

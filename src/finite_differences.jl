@@ -198,6 +198,8 @@ end
 schafer_corner_fix(ρ, Z) = 1/ρ^2*Z*ρ/8*(1 + Z*ρ)
 
 function log_lin_grid!(r, ρₘᵢₙ, ρₘₐₓ, α, js)
+    0 < ρₘᵢₙ < Inf && 0 < ρₘₐₓ < Inf ||
+        throw(DomainError((ρₘᵢₙ, ρₘₐₓ), "Log–linear grid steps need to be finite and larger than zero"))
     δρ = ρₘₐₓ-ρₘᵢₙ
     for j = js
         r[j] = r[j-1] + ρₘᵢₙ + (1-exp(-α*r[j-1]))*δρ
