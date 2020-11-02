@@ -71,7 +71,7 @@ function FunctionProduct{Conjugated}(L::BasisOrRestricted, R::BasisOrRestricted,
 
     ρρ = tmpvec(T, size(R,2), nρ)
 
-    if LV == RV && sum(bandwidths(LV)) == 0
+    if L == R && sum(bandwidths(LV)) == 0
         # Orthogonal case
         RV = RV[indices(R,2),:]
         uniform = all(isone, RV.data)
