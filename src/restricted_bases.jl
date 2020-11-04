@@ -17,6 +17,8 @@ unrestricted_basis(R::RestrictedQuasiArray) = parent(R)
 ==(A::BasisOrRestricted, B::BasisOrRestricted) =
     unrestricted_basis(A) == unrestricted_basis(B)
 
+Base.hash(B::RestrictedQuasiArray, h::UInt) = hash(indices(B,2), hash(parent(B), h))
+
 restriction_extents(::Basis) = 0,0
 function restriction_extents(B̃::RestrictedQuasiArray)
     B = parent(B̃)

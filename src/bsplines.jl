@@ -123,6 +123,7 @@ BSpline(t::AbstractKnotSet; k′=3) = BSpline(t, num_quadrature_points(order(t),
 axes(B::BSpline) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(numfunctions(B.t)))
 size(B::BSpline) = (ℵ₁, numfunctions(B.t))
 ==(A::BSpline,B::BSpline) = A.t == B.t
+Base.hash(B::BSpline, h::UInt) = hash(B.t, h)
 
 distribution(B::BSpline) = distribution(B.t)
 

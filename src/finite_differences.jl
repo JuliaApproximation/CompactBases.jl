@@ -24,6 +24,7 @@ inverse_weight(B::AbstractFiniteDifferences{T}, _) where T = one(T)
 inverse_weights(B::AbstractFiniteDifferences{T}) where T = ones(T,size(B,2))
 
 ==(A::AbstractFiniteDifferences,B::AbstractFiniteDifferences) = locs(A) == locs(B)
+Base.hash(R::AbstractFiniteDifferences, h::UInt) = hash(locs(R), h)
 
 assert_compatible_bases(A::FiniteDifferencesOrRestricted, B::FiniteDifferencesOrRestricted) =
     locs(A) == locs(B) ||
