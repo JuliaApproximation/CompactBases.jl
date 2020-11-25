@@ -296,8 +296,11 @@ local_step(B::StaggeredFiniteDifferences, j) = local_step(distribution(B), B, j)
 IntervalSets.leftendpoint(B::StaggeredFiniteDifferences{T}) where T = zero(T)
 IntervalSets.rightendpoint(B::StaggeredFiniteDifferences{T}) where T = 2B.r[end]-B.r[end-1]
 
-show(io::IO, B::StaggeredFiniteDifferences{T}) where T =
-    write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points")
+function show(io::IO, B::StaggeredFiniteDifferences{T}) where T
+    ρ = Base.diff(B.r)
+    mi,ma = extrema(ρ)
+    write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points with spacing varying from $(mi) to $(ma)")
+end
 
 show(io::IO, B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T =
     write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by ρ = $(step(B))")
