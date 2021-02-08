@@ -42,7 +42,7 @@ inverse_weights(d::NonUniform, B::AbstractFiniteDifferences) = inverse_weight.(R
 inverse_weights(B::AbstractFiniteDifferences) = inverse_weights(distribution(B), B)
 
 ==(A::AbstractFiniteDifferences,B::AbstractFiniteDifferences) = locs(A) == locs(B)
-Base.hash(R::AbstractFiniteDifferences, h::UInt) = hash(locs(R), h)
+Base.hash(R::FD, h::UInt) where {FD<:AbstractFiniteDifferences} = hash(locs(R), hash(FD, h))
 
 assert_compatible_bases(A::FiniteDifferencesOrRestricted, B::FiniteDifferencesOrRestricted) =
     locs(A) == locs(B) ||
@@ -279,7 +279,6 @@ open interval `(0,rₘₐₓ)` with `n` grid points.
 end
 
 locs(B::StaggeredFiniteDifferences) = B.r
-
 local_step(::Uniform, B::StaggeredFiniteDifferences, _) = step(B.r)
 function local_step(::NonUniform, B::StaggeredFiniteDifferences, j)
     r = B.r
@@ -347,7 +346,6 @@ open interval `(0,rₘₐₓ)` with `n` grid points.
 end
 
 locs(B::ImplicitFiniteDifferences) = B.r
-
 IntervalSets.leftendpoint(B::ImplicitFiniteDifferences) = B.r[1] - local_step(B,1)
 IntervalSets.rightendpoint(B::ImplicitFiniteDifferences) = B.r[end] + local_step(B,length(B.r))
 
