@@ -14,7 +14,7 @@
             @test norm(v) ≈ 1.0
             @test *(v'.args..., v.args...) ≈ 1.0
             @test v'v ≈ 1.0
-            @test vv'S*vv ≈ 1.0
+            @test dot(vv,S,vv) ≈ 1.0
 
             # lazyip = Dot(v, v)
             # @test materialize(lazyip) ≈ 1.0

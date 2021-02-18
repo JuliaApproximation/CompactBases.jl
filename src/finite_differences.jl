@@ -86,6 +86,8 @@ vandermonde(::NonUniform, B::AbstractFiniteDifferences) =
 
 vandermonde(B::AbstractFiniteDifferences) = vandermonde(distribution(B), B)
 
+metric_shape(B::FiniteDifferencesOrRestricted) = Diagonal
+
 # * Types
 
 const FDArray{T,N,B<:FiniteDifferencesOrRestricted} = FuncArray{T,N,B}
@@ -185,6 +187,8 @@ end
 schafer_corner_fix(ρ, Z) = 1/ρ^2*Z*ρ/8*(1 + Z*ρ)
 
 function log_lin_grid!(r, ρₘᵢₙ, ρₘₐₓ, α, js)
+    0 < ρₘᵢₙ < Inf && 0 < ρₘₐₓ < Inf ||
+        throw(DomainError((ρₘᵢₙ, ρₘₐₓ), "Log–linear grid steps need to be finite and larger than zero"))
     δρ = ρₘₐₓ-ρₘᵢₙ
     for j = js
         r[j] = r[j-1] + ρₘᵢₙ + (1-exp(-α*r[j-1]))*δρ
@@ -227,13 +231,15 @@ r = 0. Supports non-uniform grids, c.f.
   10118–10125. http://dx.doi.org/10.1021/jp992144
 
 """
-struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B} <: AbstractFiniteDifferences{T,Int}
+struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B,D} <: AbstractFiniteDifferences{T,Int}
     r::V
     Z::T
     δβ₁::T # Correction used for bare Coulomb potentials, Eq. (22) Schafer2009
     α::A
     β::B
+    δ::D
 
+    # Uniform case
     function StaggeredFiniteDifferences(r::V, Z=one(T),
                                         δβ₁=schafer_corner_fix(local_step(r,1), Z)) where {T,V<:AbstractRange{T}}
         issorted(r) ||
@@ -248,9 +254,10 @@ struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B} <: AbstractFiniteD
 
         β[1] += δβ₁ * step(r)^2
 
-        new{T,V,typeof(α),typeof(β)}(r, T(Z), T(δβ₁), α, β)
+        new{T,V,typeof(α),typeof(β),typeof(α)}(r, T(Z), T(δβ₁), α, β, α)
     end
 
+    # Arbitrary case
     function StaggeredFiniteDifferences(r::V, Z=one(T),
                                         δβ₁=schafer_corner_fix(local_step(r,1), Z)) where {T,V<:AbstractVector{T}}
         issorted(r) ||
@@ -259,6 +266,8 @@ struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B} <: AbstractFiniteD
         N = length(r)
         α = zeros(T, N-1)
         β = zeros(T, N)
+        γ = zeros(T, N)
+        δ = zeros(T, N-1)
 
         r̃ = vcat(r, 2r[end]-r[end-1])
         a = 2r[1]-r[2]
@@ -268,19 +277,21 @@ struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B} <: AbstractFiniteD
             if j < N
                 d = r̃[j+2]
                 # Eq. (A13) Krause 1999
-                α[j] = 2/((c-b)*√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
+                δ[j] = 2/(√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
+                α[j] = δ[j]/(c-b)
             end
 
             # Eq. (A14) Krause 1999
-            β[j] = 1/(c-a)*(1/(c-b)*((c+b)/2b)^2 +
-                            1/(b-a)*((b+a)/2b)^2)
+            fp = ((c+b)/2b)^2
+            fm = ((b+a)/2b)^2
+            β[j] = 1/(c-a)*(1/(c-b)*fp + 1/(b-a)*fm)
 
             a,b,c = b,c,d
         end
 
         β[1] += δβ₁
 
-        new{T,V,typeof(α),typeof(β)}(r, T(Z), T(δβ₁), α, β)
+        new{T,V,typeof(α),typeof(β),typeof(δ)}(r, T(Z), T(δβ₁), α, β, δ)
     end
 
     # Constructor of uniform grid

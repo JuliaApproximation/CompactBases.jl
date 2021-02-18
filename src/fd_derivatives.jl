@@ -1,28 +1,43 @@
 # * Derivatives
 # ** Three-point stencils
+
+# α = super-/subdiagonal of second derivative
+# β = -1/2 diagonal of second derivative
+# γ = diagonal of first derivative
+# δ = super-/subdiagonal of first derivative
+
 α(::FiniteDifferences{T}, ::Integer) where T = one(T)
 β(::FiniteDifferences{T}, ::Integer) where T = one(T)
 γ(::FiniteDifferences{T}, ::Integer) where T = zero(T)
+δ(::FiniteDifferences{T}, ::Integer) where T = one(T)
 
 α(B::StaggeredFiniteDifferences,    j::Integer)         = B.α[j]
-β(B::StaggeredFiniteDifferences{T}, j::Integer) where T = B.β[j]
+β(B::StaggeredFiniteDifferences,    j::Integer)         = B.β[j]
 γ( ::StaggeredFiniteDifferences{T},  ::Integer) where T = zero(T)
+δ(B::StaggeredFiniteDifferences,    j::Integer)         = B.δ[j]
 
-α(B::StaggeredFiniteDifferences)            = B.α
-β(B::StaggeredFiniteDifferences)            = B.β
+α(B::StaggeredFiniteDifferences) = B.α
+β(B::StaggeredFiniteDifferences) = B.β
 γ(B::StaggeredFiniteDifferences{T}) where T = zeros(T, length(B.r))
+δ(B::StaggeredFiniteDifferences) = B.δ
 
 α( ::ImplicitFiniteDifferences{T},  ::Integer) where T = one(T)
 β(B::ImplicitFiniteDifferences{T}, j::Integer) where T = one(T) + (j == 1 ? B.δβ₁ : zero(T))
 γ(B::ImplicitFiniteDifferences{T}, j::Integer) where T = (j == 1 ? B.λ : zero(T))
+δ( ::ImplicitFiniteDifferences{T},  ::Integer) where T = one(T)
 
 α(B::AbstractFiniteDifferences) = α.(Ref(B), B.j[1:end-1])
 β(B::AbstractFiniteDifferences) = β.(Ref(B), B.j)
 γ(B::AbstractFiniteDifferences) = γ.(Ref(B), B.j)
+δ(B::AbstractFiniteDifferences) = δ.(Ref(B), B.j[1:end-1])
 
-function α(B̃::RestrictedFiniteDifferences)
-    j = indices(B̃,2)
-    α(parent(B̃))[j[1]:(j[end]-1)]
+for f in [:α, :δ]
+    @eval begin
+        function $f(B̃::RestrictedFiniteDifferences)
+            j = indices(B̃,2)
+            $f(parent(B̃))[j[1]:(j[end]-1)]
+        end
+    end
 end
 
 for f in [:β, :γ]
@@ -33,7 +48,7 @@ for f in [:β, :γ]
     end
 end
 
-for f in [:α, :β, :γ]
+for f in [:α, :β, :γ, :δ]
     @eval begin
         function $f(Ã::BasisOrRestricted{<:AbstractFiniteDifferences},
                     B̃::BasisOrRestricted{<:AbstractFiniteDifferences},
@@ -83,10 +98,10 @@ end
 
         # Central difference approximation
         μ = 2step(B)
-        a = α(B)/μ
-        dest.dl .= -a
+        d = δ(B)/μ
+        dest.dl .= -d
         dest.d .= γ(B)/μ
-        dest.du .= a
+        dest.du .= d
     end
     dest::BandedMatrix{T} -> begin
         A = parent(Ac)

@@ -27,12 +27,6 @@ end
 restriction(B) = Diagonal(Ones{Int}(size(B,2)))
 restriction(B̃::RestrictedQuasiArray) = last(LazyArrays.arguments(B̃))
 
-function combined_restriction(A,B)
-    parent(A) == parent(B) ||
-        throw(ArgumentError("Cannot multiply functions on different grids"))
-    restriction(A)'*restriction(B)
-end
-
 function combined_restriction_selection(A,B)
     parent(A) == parent(B) ||
         throw(ArgumentError("Cannot multiply functions on different grids"))
@@ -43,6 +37,17 @@ function combined_restriction_selection(A,B)
     lsel = 1+ra:(size(A,2)-max(0,rb-lb))
     rsel = 1+la:(size(B,2)-max(0,lb-rb))
     lsel, rsel
+end
+
+function combined_restriction(A,B)
+    lsel,rsel = combined_restriction_selection(A,B)
+    l,u,r = if !isempty(lsel)
+        l = lsel[1]-rsel[1]
+        l, -l, 1
+    else
+        -1, -1, 0
+    end
+    BandedMatrices._BandedMatrix(Ones{Int}(r,size(B,2)), axes(A,2), l,u)
 end
 
 function show(io::IO, B̃::RestrictedQuasiArray{<:Any,2})
