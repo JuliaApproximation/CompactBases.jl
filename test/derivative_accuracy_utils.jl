@@ -103,10 +103,11 @@ function compute_derivative_errors(fun::Function, Ns,
                                    verbosity=0)
     p = Progress(length(Ns))
     errors = map(Ns) do N
-        R,μ = fun(N)
+        R = fun(N)
         R,fv,gv,hv,hv′,δgv,δhv,δhv′ = test_derivatives(R, f, g, h)
+        S = R'R
         ProgressMeter.next!(p)
-        [norm(δgv)*μ norm(δhv)*μ norm(δhv′)*μ]
+        [√(dot(δgv, S, δgv)) √(dot(δhv, S, δhv)) √(dot(δhv′, S, δhv′))]
     end |> e -> vcat(e...)
 
     ϵg = errors[:,1]

@@ -120,7 +120,7 @@ function compute_fedvr_derivative_errors(a, b, Ns, order::Integer, s::Integer, e
             n = size(R,2)
             R = R[:,(1+s):(n-e)]
         end
-        R,1
+        R
     end
 end
 

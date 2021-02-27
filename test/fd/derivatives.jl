@@ -120,9 +120,9 @@ end
             Δx = L/(N+1)
             j = (1:N) .+ round(Int, a/Δx)
             if B == StaggeredFiniteDifferences
-                StaggeredFiniteDifferences(N, Δx, 1.0, 0.0),Δx
+                StaggeredFiniteDifferences(N, Δx, 1.0, 0.0)
             else
-                B(j, Δx),Δx
+                B(j, Δx)
             end
         end
 
@@ -135,9 +135,7 @@ end
                                                      (2.5, "Non-uniform", N -> (dd*(1 .- cos.(π*range(0,stop=1,length=N+2)[2:end-1]))/2,))]
             @info "$(label) StaggeredFiniteDifferences derivative accuracy"
             hs,ϵg,ϵh,ϵh′,pg,ph,ph′ = compute_derivative_errors(Ns, x -> f(x-dd/2), x -> g(x-dd/2), x -> h(x-dd/2), 1) do N
-                R = StaggeredFiniteDifferences(fun(N)..., 1.0, 0.0)
-                Δx = maximum(diff(R.r))
-                R, Δx
+                StaggeredFiniteDifferences(fun(N)..., 1.0, 0.0)
             end
 
             @test isapprox(pg, order, atol=0.03) || pg > order

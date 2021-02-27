@@ -158,7 +158,7 @@ end
             @show k
             hs,ϵg,ϵh,ϵh′,pg,ph,ph′ = compute_derivative_errors(Ns, f, g, h, 1) do N
                 t = LinearKnotSet(k, a, b, N)
-                BSpline(t), 1
+                BSpline(t)
             end
             # These requirements are not derived, but empirical
             # results, mainly to ensure not regression occurs.
