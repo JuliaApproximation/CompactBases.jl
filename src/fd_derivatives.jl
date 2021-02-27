@@ -51,6 +51,14 @@ function α(::NonUniform, B::StaggeredFiniteDifferences)
     end
 end
 
+function α(::NonUniform, B::StaggeredFiniteDifferences, f::Function)
+    staggered_stencil_common(B, -1) do a,b,c,d
+        rⱼ₊₁₂ = (b+c)/2
+        # Eq. (A13) Krause 1999
+        2f(rⱼ₊₁₂)/((c-b)*√((d-b)*(c-a)))*rⱼ₊₁₂^2/(b*c)
+    end
+end
+
 function β(::NonUniform, B::StaggeredFiniteDifferences)
     staggered_stencil_common(B) do a,b,c,d
         # Eq. (A14) Krause 1999
@@ -60,14 +68,26 @@ function β(::NonUniform, B::StaggeredFiniteDifferences)
     end
 end
 
+function β(::NonUniform, B::StaggeredFiniteDifferences, f::Function)
+    staggered_stencil_common(B) do a,b,c,d
+        # Eq. (A14) Krause 1999
+        b⁻² = inv(b^2)
+        rⱼ₊₁₂ = (b+c)/2
+        rⱼ₋₁₂ = (a+b)/2
+        fp = rⱼ₊₁₂^2 * b⁻²
+        fm = rⱼ₋₁₂^2 * b⁻²
+        1/(c-a)*(f(rⱼ₊₁₂)/(c-b)*fp + f(rⱼ₋₁₂)/(b-a)*fm)
+    end
+end
+
 function δ(::NonUniform, B::StaggeredFiniteDifferences)
     staggered_stencil_common(B, -1) do a,b,c,d
         2/(√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
     end
 end
 
-α(B::StaggeredFiniteDifferences)            = α(distribution(B), B)
-β(B::StaggeredFiniteDifferences)            = β(distribution(B), B)
+α(B::StaggeredFiniteDifferences, args...)   = α(distribution(B), B, args...)
+β(B::StaggeredFiniteDifferences, args...)   = β(distribution(B), B, args...)
 γ(B::StaggeredFiniteDifferences{T}) where T = zeros(T, length(B.r))
 δ(B::StaggeredFiniteDifferences)            = δ(distribution(B), B)
 
@@ -245,6 +265,47 @@ end
         δ² = step(B)^2
         dest.dv .= -2β(B)/δ²
         dest.ev .= α(B)/δ²
+    end
+    dest::Tridiagonal{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        δ² = step(B)^2
+        dest.dl .= α̃(B)/δ²
+        dest.d .= -2β(B)/δ²
+        dest.du .= α(B)/δ²
+    end
+    dest::BandedMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        dl,d,du = bandrange(dest)
+        δ² = step(B)^2
+        dest[Band(dl)] .= α̃(A,B,-1)/δ²
+        dest[Band(d)] .= -2β(A,B)/δ²
+        dest[Band(du)] .= α(A,B,1)/δ²
+    end
+end
+
+@materialize function *(Ac::AdjointBasisOrRestricted{<:StaggeredFiniteDifferences},
+                        Dc::QuasiAdjoint{<:Any,<:Derivative},
+                        O::QuasiDiagonal,
+                        D::Derivative,
+                        B::BasisOrRestricted{<:StaggeredFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 2)
+    end
+    dest::SymTridiagonal{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        δ² = step(B)^2
+        f = r -> O.diag[max(zero(T),r)]
+        dest.dv .= -2β(B,f)/δ²
+        dest.ev .= α(B,f)/δ²
     end
     dest::Tridiagonal{T} -> begin
         A = parent(Ac)
@@ -499,6 +560,23 @@ function materialize(M::Mul{<:Any, <:Tuple{
     Dc = adjoint(parent(CDc).D)
     D = CD.D
     ∂² = Ac*Dc*D*B
+    if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+        laplacian_correction!(∂², parent(B), CD.Z, CD.ℓ)
+    end
+    ∂²
+end
+
+function materialize(M::Mul{<:Any, <:Tuple{
+    <:AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
+    <:QuasiAdjoint{T,<:CoulombDerivative},
+    <:QuasiDiagonal,
+    <:CoulombDerivative,
+    <:BasisOrRestricted{<:AbstractFiniteDifferences}}}) where T
+    Ac,CDc,O,CD,B = M.args
+    @assert parent(CDc).Z == CD.Z
+    Dc = adjoint(parent(CDc).D)
+    D = CD.D
+    ∂² = Ac*Dc*O*D*B
     if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
         laplacian_correction!(∂², parent(B), CD.Z, CD.ℓ)
     end
