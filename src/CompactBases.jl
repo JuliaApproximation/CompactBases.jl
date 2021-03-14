@@ -1,4 +1,7 @@
 module CompactBases
+# The package actually supports precompilation, but doing `using CompactBases` with
+# precompilation on leads to a huge spike in memory, which does not happen when it's off.
+__precompile__(false)
 
 import Base: eltype, axes, size, ==, getindex, checkbounds, copyto!, similar, show, step
 import Base.Broadcast: materialize
