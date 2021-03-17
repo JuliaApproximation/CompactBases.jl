@@ -78,5 +78,5 @@ jobs:
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
             using CompactBases
-            DocMeta.setdocmeta!(CompactBases, :DocTestSetup, :(using CompactBases); recursive=true)
+            DocMeta.setdocmeta!(CompactBases, :DocTestSetup, :(using CompactBases, LinearAlgebra); recursive=true)
             doctest(CompactBases)'

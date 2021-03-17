@@ -2,7 +2,6 @@ using Documenter, CompactBases, LinearAlgebra
 
 isdefined(Main, :NOPLOTS) && NOPLOTS || include("plots.jl")
 
-DocMeta.setdocmeta!(CompactBases, :DocTestSetup, :(using CompactBases, LinearAlgebra); recursive=true)
 makedocs(;
     modules=[CompactBases],
     format=Documenter.HTML(assets = ["assets/latex.js"],
@@ -40,6 +39,7 @@ makedocs(;
     repo="https://github.com/JuliaApproximation/CompactBases.jl/blob/{commit}{path}#L{line}",
     sitename="CompactBases.jl",
     authors="Stefanos Carlström <stefanos.carlstrom@gmail.com>",
+    doctest=false
 )
 
 deploydocs(;
