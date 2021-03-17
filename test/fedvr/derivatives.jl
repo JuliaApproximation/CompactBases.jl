@@ -4,11 +4,11 @@
         B̃ = B[:,2:end-1]
         D = Derivative(axes(B,1))
 
-        BD = B'⋆D
-        BDD = B'⋆D'⋆D
+        BD = B'D
+        BDD = B'D'D
 
         @test BD*B == B'*D*B
-        @test_broken BDD*B == B'*D'*D*B
+        @test BDD*B == B'*D'*D*B
 
         @test B'D*B == B'*D*B
         @test B'D'D*B == B'*D'*D*B

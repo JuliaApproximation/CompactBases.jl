@@ -25,7 +25,7 @@ function restriction_extents(B̃::RestrictedQuasiArray)
 end
 
 restriction(B) = Diagonal(Ones{Int}(size(B,2)))
-restriction(B̃::RestrictedQuasiArray) = last(LazyArrays.arguments(B̃))
+restriction(B̃::RestrictedQuasiArray) = last(LazyArrays.arguments(LazyArrays.ApplyLayout{typeof(*)}(), B̃))
 
 function combined_restriction_selection(A,B)
     parent(A) == parent(B) ||

@@ -25,7 +25,6 @@ diffop!(dest::BandedMatrix, B::BSplineOrRestricted, o) =
 @materialize function *(Ac::AdjointBasisOrRestricted{<:BSpline},
                         D::Derivative,
                         B::BasisOrRestricted{<:BSpline})
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
@@ -38,7 +37,6 @@ end
                         Dc::QuasiAdjoint{<:Any,<:Derivative},
                         D::Derivative,
                         B::BasisOrRestricted{<:BSpline})
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
@@ -52,7 +50,6 @@ end
                         O::QuasiDiagonal,
                         D::Derivative,
                         B::BasisOrRestricted{<:BSpline})
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
@@ -70,7 +67,6 @@ end
                         P::QuasiDiagonal,
                         D::Derivative,
                         B::BasisOrRestricted{<:BSpline})
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end

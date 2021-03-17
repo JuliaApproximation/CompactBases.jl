@@ -1,10 +1,8 @@
 # * Scalar operators
-struct FiniteDifferencesStyle <: AbstractQuasiArrayApplyStyle end
 
 @materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
                         D::QuasiDiagonal,
                         B::BasisOrRestricted{<:AbstractFiniteDifferences})
-    FiniteDifferencesStyle
     T -> begin
         A = parent(Ac)
         parent(A) == parent(B) ||

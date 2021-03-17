@@ -88,7 +88,6 @@ end
 @materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
                         D::Derivative,
                         B::BasisOrRestricted{<:AbstractFiniteDifferences})
-    FiniteDifferencesStyle
     T -> begin
         derivative_matrix(T, Ac, B, 1)
     end
@@ -122,7 +121,6 @@ end
                         Dc::QuasiAdjoint{<:Any,<:Derivative},
                         D::Derivative,
                         B::BasisOrRestricted{<:AbstractFiniteDifferences})
-    FiniteDifferencesStyle
     T -> begin
         derivative_matrix(T, Ac, B, 2)
     end
@@ -186,15 +184,10 @@ implicit_derivative(::Type{T}, M, difforder) where T =
                        implicit_lhs(last(M.args), difforder),
                        implicit_coeff(T, difforder))
 
-materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
-    <:AdjointBasisOrRestricted{B},
-    <:Derivative,
-    <:BasisOrRestricted{B}}}) where {T,B<:ImplicitFiniteDifferences{T}} =
-        implicit_derivative(T, M, 1)
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{B}, ::Derivative, ::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = Val(true)
+LazyArrays._simplify(::typeof(*), A::AdjointBasisOrRestricted{B}, D::Derivative, C::BasisOrRestricted{B})  where {T,B<:ImplicitFiniteDifferences{T}} =
+        implicit_derivative(T, ApplyQuasiArray(*,A,D,C), 1)
 
-materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
-    <:AdjointBasisOrRestricted{B},
-    <:QuasiAdjoint{T,<:Derivative},
-    <:Derivative,
-    <:BasisOrRestricted{B}}}) where {T,B<:ImplicitFiniteDifferences{T}} =
-        implicit_derivative(T, M, 2)
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{B}, ::QuasiAdjoint{T,<:Derivative}, ::Derivative, ::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = Val(true)
+LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{B}, Dc::QuasiAdjoint{T,<:Derivative}, D::Derivative, A::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = 
+        implicit_derivative(T, ApplyQuasiArray(*,Ac,Dc,D,A), 2)
