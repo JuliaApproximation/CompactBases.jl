@@ -7,11 +7,11 @@
   <rdf:RDF xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2020-11-02T07:38:50.940929</dc:date>
+    <dc:date>2021-03-17T23:43:38.414874</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
-      <dc:title>Matplotlib v3.3.2, https://matplotlib.org/</dc:title>
+      <dc:title>Matplotlib v3.3.4, https://matplotlib.org/</dc:title>
      </cc:Agent>
     </dc:creator>
    </cc:Work>
@@ -31,7 +31,7 @@ z
   </g>
   <g id="axes_1">
    <g id="line2d_1">
-    <path clip-path="url(#p4630478191)" d="M 51 189 
+    <path clip-path="url(#p1c45026c11)" d="M 51 189 
 L 52.34 188.9352 
 L 53.68 188.7408 
 L 55.02 188.4168 
@@ -93,7 +93,7 @@ L 453 189
 " style="fill:none;stroke:#e24a33;stroke-linecap:square;stroke-width:4;"/>
    </g>
    <g id="line2d_2">
-    <path clip-path="url(#p4630478191)" d="M 51 189 
+    <path clip-path="url(#p1c45026c11)" d="M 51 189 
 L 118 189 
 L 122.02 179.523 
 L 126.04 170.532 
@@ -160,7 +160,7 @@ L 453 189
 " style="fill:none;stroke:#348abd;stroke-linecap:square;stroke-width:4;"/>
    </g>
    <g id="line2d_3">
-    <path clip-path="url(#p4630478191)" d="M 51 189 
+    <path clip-path="url(#p1c45026c11)" d="M 51 189 
 L 122.02 188.9028 
 L 126.04 188.6112 
 L 130.06 188.1252 
@@ -246,7 +246,7 @@ L 453 189
 " style="fill:none;stroke:#988ed5;stroke-linecap:square;stroke-width:4;"/>
    </g>
    <g id="line2d_4">
-    <path clip-path="url(#p4630478191)" d="M 51 189 
+    <path clip-path="url(#p1c45026c11)" d="M 51 189 
 L 254.68 188.9136 
 L 257.36 188.6544 
 L 260.04 188.2224 
@@ -313,7 +313,7 @@ L 453 189
 " style="fill:none;stroke:#777777;stroke-linecap:square;stroke-width:4;"/>
    </g>
    <g id="line2d_5">
-    <path clip-path="url(#p4630478191)" d="M 51 189 
+    <path clip-path="url(#p1c45026c11)" d="M 51 189 
 L 321.68 188.9352 
 L 325.7 188.595 
 L 329.72 187.9632 
@@ -351,7 +351,7 @@ L 453 27
   </g>
  </g>
  <defs>
-  <clipPath id="p4630478191">
+  <clipPath id="p1c45026c11">
    <rect height="194.4" width="482.4" x="10.8" y="10.8"/>
   </clipPath>
  </defs>
