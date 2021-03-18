@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Diagonal operators · CompactBases.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><script src="../assets/latex.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.svg" alt="CompactBases.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">CompactBases.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../inner_products/">Inner products &amp; norms</a></li><li><span class="tocitem">Operators</span><ul><li class="is-active"><a class="tocitem" href>Diagonal operators</a><ul class="internal"><li><a class="tocitem" href="#Construction-from-scalar-valued-function-1"><span>Construction from scalar-valued function</span></a></li><li><a class="tocitem" href="#Construction-from-existing-expansion-coefficients-1"><span>Construction from existing expansion coefficients</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../densities/">Densities</a></li><li><span class="tocitem">Finite-differences</span><ul><li><a class="tocitem" href="../fd_overview/">Overview</a></li><li><a class="tocitem" href="../fd_non_uniform/">Non-uniform grids</a></li></ul></li><li><span class="tocitem">B-splines</span><ul><li><a class="tocitem" href="../bsplines/theory/">Theory</a></li><li><input class="collapse-toggle" id="menuitem-7-2" type="checkbox"/><label class="tocitem" for="menuitem-7-2"><span class="docs-label">Usage</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../bsplines/usage/">Basis creation</a></li><li><a class="tocitem" href="../bsplines/knot_sets/">Knot sets</a></li><li><input class="collapse-toggle" id="menuitem-7-2-3" type="checkbox"/><label class="tocitem" for="menuitem-7-2-3"><span class="docs-label">Splines</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../bsplines/splines/">Spline creation &amp; evaluation</a></li><li><a class="tocitem" href="../bsplines/function_approximation/">Function approximation</a></li></ul></li><li><a class="tocitem" href="../bsplines/operators/">Approximating operators</a></li><li><input class="collapse-toggle" id="menuitem-7-2-5" type="checkbox"/><label class="tocitem" for="menuitem-7-2-5"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../bsplines/differentiation/">Differentiating functions</a></li><li><a class="tocitem" href="../bsplines/odes/">Ordinary differential equations</a></li><li><a class="tocitem" href="../bsplines/eigenproblems/">Eigenproblems</a></li></ul></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Operators</a></li><li class="is-active"><a href>Diagonal operators</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Diagonal operators</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/master/docs/src/diagonal_operators.md#L" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Diagonal-operators-1"><a class="docs-heading-anchor" href="#Diagonal-operators-1">Diagonal operators</a><a class="docs-heading-anchor-permalink" href="#Diagonal-operators-1" title="Permalink"></a></h1><p>Diagonal operators are operators that only depend on the coordinate; they are also called local operators. They act on a function to produce a new function as</p><div>\[L f(x) = f(x)g(x)\]</div><p>Typical examples are potentials, such as the Coulomb potential <span>$V(x) = Q/x$</span>, generated by a charge <span>$Q$</span>. This potential is not polynomial, i.e. we cannot compute its matrix elements exactly using Gauß quadratures, but with high enough order and intelligent placement of the nodes, we can get sufficient accuracy.</p><p>In orthogonal bases, such as finite-differences and FE-DVR diagonal operators are represented by diagonal matrices, whose elements coincide with the values of the function evaluated at the nodes, whereas in B-splines they are banded (with the bandwidth decided by the polynomial order).</p><p>We can construct diagonal operators in two ways:</p><ol><li>From a scalar-valued function</li><li>From a vector of expansion coefficients</li></ol><h2 id="Construction-from-scalar-valued-function-1"><a class="docs-heading-anchor" href="#Construction-from-scalar-valued-function-1">Construction from scalar-valued function</a><a class="docs-heading-anchor-permalink" href="#Construction-from-scalar-valued-function-1" title="Permalink"></a></h2><p>The first way consists of constructing a <code>QuasiDiagonal</code> object representing the function broadcast along the continuous dimension of our quasimatrix:</p><pre><code class="language-julia-repl">julia&gt; f = x -&gt; sin(2π*x);
+
+julia&gt; rmax,k,N = 10.0,7,71;
+
+julia&gt; r = Inclusion(0..rmax)
+Inclusion(0.0..10.0)
+
+julia&gt; qf = QuasiDiagonal(f.(r))
+QuasiDiagonal{Float64,QuasiArrays.BroadcastQuasiArray{Float64,1,var&quot;#3824#3825&quot;,Tuple{Inclusion{Float64,IntervalSets.Interval{:closed,:closed,Float64}}}}}(QuasiArrays.BroadcastQuasiArray{Float64,1,var&quot;#3824#3825&quot;,Tuple{Inclusion{Float64,IntervalSets.Interval{:closed,:closed,Float64}}}}(var&quot;#3824#3825&quot;(), (Inclusion(0.0..10.0),)))</code></pre><p>We can then project this onto a specific basis:</p><pre><code class="language-julia-repl">julia&gt; R = FiniteDifferences(1:N, rmax/(N+1))
+Finite differences basis {Float64} on 0.0..10.0 with 71 points spaced by Δx = 0.1388888888888889
+
+julia&gt; F = R&#39;*qf*R
+71×71 Diagonal{Float64,Array{Float64,1}}:
+ 0.766044   ⋅         ⋅     ⋅         ⋅          ⋅          ⋅        …   ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅        0.984808   ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅        0.5    ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅   -0.34202    ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅       -0.939693    ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅        -0.866025    ⋅        …   ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅        -0.173648      ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅        …   ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅        …   ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+ ⋮                                              ⋮                    ⋱            ⋮                                              ⋮
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅        …   ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅        …   ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅           0.173648   ⋅         ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅        …   ⋅        0.866025   ⋅         ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅        0.939693   ⋅         ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅        0.34202    ⋅     ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅       -0.5    ⋅          ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅            ⋅         ⋅         ⋅         ⋅         ⋅   -0.984808    ⋅
+  ⋅         ⋅         ⋅     ⋅         ⋅          ⋅          ⋅        …   ⋅         ⋅         ⋅         ⋅         ⋅     ⋅        -0.766044</code></pre><p>As indicated above, for uniform finite-differences the matrix elements coincide with the function values at the nodes:</p><pre><code class="language-julia-repl">julia&gt; norm(diag(F) - f.(CompactBases.locs(R)))
+0.0</code></pre><p>For B-splines, the situation is complicated by the fact that the basis functions are non-orthogonal:</p><pre><code class="language-julia-repl">julia&gt; R = BSpline(LinearKnotSet(k, 0, rmax, N))
+BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..10.0 (71 intervals)
+
+julia&gt; F = R&#39;*qf*R
+77×77 BandedMatrices.BandedMatrix{Float64,Array{Float64,2},Base.OneTo{Int64}}:
+ 0.000682615  0.000987306  0.00043971   8.7846e-5    8.60727e-6    3.99159e-7   …    ⋅            ⋅             ⋅             ⋅
+ 0.000987306  0.00413625   0.00468984   0.00232941   0.000573453   6.82737e-5        ⋅            ⋅             ⋅             ⋅
+ 0.00043971   0.00468984   0.0114273    0.0114915    0.00562534    0.00134742        ⋅            ⋅             ⋅             ⋅
+ 8.7846e-5    0.00232941   0.0114915    0.021737     0.0194201     0.00849555        ⋅            ⋅             ⋅             ⋅
+ 8.60727e-6   0.000573453  0.00562534   0.0194201    0.0303017     0.0226904         ⋅            ⋅             ⋅             ⋅
+ 3.99159e-7   6.82737e-5   0.00134742   0.00849555   0.0226904     0.0273211    …    ⋅            ⋅             ⋅             ⋅
+ 6.92763e-9   3.1258e-6    0.000131733  0.0016054    0.0074447     0.0129012         ⋅            ⋅             ⋅             ⋅
+  ⋅           4.90703e-10  7.84375e-7   4.68188e-5   0.000508687   0.000296132       ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅           8.00117e-11  1.57973e-7   1.60126e-6   -0.000368678       ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅           1.8637e-12  -8.38672e-8   -2.36173e-5        ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅          -2.00923e-11  -1.72818e-7   …    ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅           -2.22022e-11       ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅           …    ⋅            ⋅             ⋅             ⋅
+ ⋮                                                                 ⋮            ⋱                              ⋮
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅           …    ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅                ⋅            ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -1.8637e-12    ⋅             ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -1.57973e-7  -8.00117e-11    ⋅             ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -4.68188e-5  -7.84375e-7   -4.90703e-10    ⋅
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅           …  -0.0016054   -0.000131733  -3.1258e-6    -6.92763e-9
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -0.00849555  -0.00134742   -6.82737e-5   -3.99159e-7
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -0.0194201   -0.00562534   -0.000573453  -8.60727e-6
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -0.021737    -0.0114915    -0.00232941   -8.7846e-5
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -0.0114915   -0.0114273    -0.00468984   -0.00043971
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅           …  -0.00232941  -0.00468984   -0.00413625   -0.000987306
+  ⋅            ⋅            ⋅            ⋅            ⋅             ⋅              -8.7846e-5   -0.00043971   -0.000987306  -0.000682615</code></pre><h2 id="Construction-from-existing-expansion-coefficients-1"><a class="docs-heading-anchor" href="#Construction-from-existing-expansion-coefficients-1">Construction from existing expansion coefficients</a><a class="docs-heading-anchor-permalink" href="#Construction-from-existing-expansion-coefficients-1" title="Permalink"></a></h2><p>Now, assume that we already know <span>$f(x)$</span> expanded over the basis function <span>$B_i(x)$</span> of our basis:</p><div>\[f(x) = \sum_i f_i B_i(x)
+\iff
+\ket{f} = \sum_i f_i \ket{B_i}
+\iff
+\ket{f} = B\vec{f}\]</div><p>where</p><div>\[B \defd
+\bmat{\ket{B_{1}} &amp; \ket{B_{2}} &amp; \dots &amp; \ket{B_{n}}}.\]</div><p>We wish to find the matrix elements of the matrix representing the linear operator that acting on <span>$1$</span> gives <span>$f(x)$</span>:</p><div>\[\operator{L}1 = f(x),\]</div><p>i.e. we are in some sense trying to solve</p><div>\[\mat{L}\vec{o} = \vec{f}\]</div><p>for <span>$\mat{L}$</span>, where <span>$\vec{o}$</span> is the expansion coefficients of <span>$1$</span> in our basis.</p><p>The most straightforward way is via the Vandermonde matrix <span>$V$</span></p><div>\[f(\vec{x}) = \mat{V}\vec{f}\]</div><p>where <span>$\vec{x}$</span> the vector of interpolation points (quadrature nodes). The matrix elements of the linear operator are then simply computed by quadrature</p><div>\[\mat{L}_{mn} = \matrixel{B_m}{f(\vec{x})}{B_n}\]</div><p>For the orthogonal bases, where <span>$B_m(x_k)=\delta_{mk}$</span>, this matrix reduces to</p><div>\[\mat{L}_{mn} = \delta_{mn}f(x_m),\]</div><p>as noted above. If we want to explicitly compute the matrix representation of a <a href="#CompactBases.DiagonalOperator"><code>DiagonalOperator</code></a>, we can do so using <a href="#Base.Matrix-Tuple{DiagonalOperator,Vararg{Any,N} where N}"><code>Matrix(L::DiagonalOperator, args...)</code></a>.</p><p><em>However</em>, we may also consider an alternative approach, that is basically the same as the one described in the section on <a href="../densities/#Densities-1">Densities</a>; what we are trying to achieve is a linear operator that when acting on a function produces the product of two functions expanded on the same basis. We may therefore employ the same routine as we use to find the mutual densities, but <em>without</em> conjugating the first function (the one corresponding to the diagonal operator). This approach is illustrated in the following example.</p><h3 id="Example-1"><a class="docs-heading-anchor" href="#Example-1">Example</a><a class="docs-heading-anchor-permalink" href="#Example-1" title="Permalink"></a></h3><p>As an example, we consider the calculation of</p><div>\[g(r) = \operator{L}f(r),\]</div><p>where <span>$f(r)=r$</span> and</p><div>\[\begin{aligned}
+\operator{L} &amp;= V(r) =
+(\alpha r^2 + \beta r)
+\exp(-3r/2),
+&amp;
+\begin{cases}
+\alpha&amp;\approx0.314269680527354,\\
+\beta&amp;\approx0.20951312035157,
+\end{cases}
+\end{aligned}\]</div><p>which is a kind of potential that arises in Coulomb repulsion between two electrons.</p><p>Now assume we know the expansion coefficients of <span>$V(x)$</span> <em>as a function</em> in a certain basis, and we wish to turn it into <em>an operator</em> that we can act on vectors of expansion coefficients of other functions. We can find this operator using the helper object <a href="#CompactBases.DiagonalOperator"><code>DiagonalOperator</code></a>, which takes a vector of expansion coefficients and computes function products using <a href="../densities/#CompactBases.FunctionProduct"><code>FunctionProduct</code></a> as outlined above. Additionally, it supports updating the operator from a new set of expansion coefficients via <code>copyto!(::DiagonalOperator, ::AbstractVector)</code>; this is useful if the vector of coefficients are updated in an iterative procedure.  Using this helper object, it is very easy to construct the linear operator corresponding to <span>$V(r)$</span>:</p><pre><code class="language-julia-repl">julia&gt; Z = 1.0
+1.0
+
+julia&gt; rmax = 20*(2^1.05)/Z
+41.4105969536551
+
+julia&gt; R = BSpline(ExpKnotSet(5, -2.0, log10(rmax), 100))[:,2:end-1]
+BSpline{Float64} basis with ExpKnotSet(Float64) of order k = 5 (quartic) on 0,0.01..41.4105969536551 (100 intervals), restricted to basis functions 2..103 ⊂ 1..104
+
+julia&gt; r = axes(R,1)
+Inclusion(0.0..41.4105969536551)
+
+julia&gt; V = r -&gt; (0.314269680527354*r^2 + 0.20951312035157*r)*exp(-3*r/2);
+
+julia&gt; Vc = R \ V.(r);
+
+julia&gt; rc = R \ identity.(r);
+
+julia&gt; L = DiagonalOperator(applied(*, R, Vc));
+
+julia&gt; Vr = L*rc
+102-element Array{Float64,1}:
+ -7.391060759593551e-13
+  3.798365781660508e-6
+  1.2424470188558774e-5
+  2.7121761396970832e-5
+  3.2090729949950215e-5
+  3.7969882632299105e-5
+  4.492587089426764e-5
+  5.3155830522769964e-5
+  6.289294838594926e-5
+  7.441303882522786e-5
+  8.804231534560188e-5
+  0.00010416656971082224
+  0.00012324201184025276
+  0.0001458080652934851
+  0.00017250246558867294
+  0.00020407906660027916
+  0.00024142882900537449
+  0.0002856045425354325
+  0.00033784992337017024
+  0.0003996338290638074
+  0.00047269044731331535
+  0.0005590664411927001
+  0.0006611761720147723
+  ⋮
+  0.0018732976205509439
+  0.0008808683138014906
+  0.00037668294021034587
+  0.00014695745488995618
+  5.063842777910832e-5
+  1.599013022980497e-5
+  4.103744132813787e-6
+  1.109651845760156e-6
+  1.2944992205824047e-7
+  8.022322694306368e-8
+ -2.5482483001496722e-8
+  2.014749642570805e-8
+ -1.2702692170923127e-8
+  8.30625314474844e-9
+ -5.430955853056595e-9
+  3.5902740375307133e-9
+ -2.4311284341540674e-9
+  1.7347709924495226e-9
+ -1.3749456882844004e-9
+  1.3170098300409254e-9
+ -8.910068563006749e-10
+  3.7529492654970227e-10</code></pre><p><img src="../figures/diagonal_operators.svg" alt="Diagonal operators"/></p><h3 id="Reference-1"><a class="docs-heading-anchor" href="#Reference-1">Reference</a><a class="docs-heading-anchor-permalink" href="#Reference-1" title="Permalink"></a></h3><article class="docstring"><header><a class="docstring-binding" id="CompactBases.DiagonalOperator" href="#CompactBases.DiagonalOperator"><code>CompactBases.DiagonalOperator</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">DiagonalOperator</code></pre><p>Helper structure that when acting on a function <span>$f(x)$</span> produces the product <span>$f(x)g(x)$</span>, where <span>$g(x)$</span> is e.g. a potential. This is similar to <code>R&#39;*QuasiDiagonal(g.(x))*R</code> in intent, but simplifies the case when <span>$g(x)$</span> needs to be updated, without computing a lot overlap integrals. This is accomplished by computing the <a href="../densities/#CompactBases.FunctionProduct"><code>FunctionProduct</code></a> of the two functions directly.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/f18472803177f78645a4f30575071db5aa6cc270/src/linear_operators.jl#LL75-L84">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="CompactBases.DiagonalOperator-Tuple{Any}" href="#CompactBases.DiagonalOperator-Tuple{Any}"><code>CompactBases.DiagonalOperator</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia">DiagonalOperator(f)</code></pre><p>Construct <a href="#CompactBases.DiagonalOperator"><code>DiagonalOperator</code></a> from a function expansion <code>f</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/f18472803177f78645a4f30575071db5aa6cc270/src/linear_operators.jl#LL91-L95">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Base.copyto!-Tuple{DiagonalOperator,AbstractArray{T,1} where T}" href="#Base.copyto!-Tuple{DiagonalOperator,AbstractArray{T,1} where T}"><code>Base.copyto!</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia">copyto!(o::DiagonalOperator, diag::AbstractVector)</code></pre><p>Update the <a href="#CompactBases.DiagonalOperator"><code>DiagonalOperator</code></a> to represent multiplication by the function whose expansion coefficients are <code>diag</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/f18472803177f78645a4f30575071db5aa6cc270/src/linear_operators.jl#LL112-L117">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="LinearAlgebra.mul!" href="#LinearAlgebra.mul!"><code>LinearAlgebra.mul!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">mul!(y, L::DiagonalOperator, x[, α=1, β=0])</code></pre><p>Compute the action of the <a href="#CompactBases.DiagonalOperator"><code>DiagonalOperator</code></a> <code>L</code> on <code>x</code> and store the result in <code>y</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/f18472803177f78645a4f30575071db5aa6cc270/src/linear_operators.jl#LL123-L128">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Base.Matrix-Tuple{DiagonalOperator,Vararg{Any,N} where N}" href="#Base.Matrix-Tuple{DiagonalOperator,Vararg{Any,N} where N}"><code>Base.Matrix</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia">Matrix(L::DiagonalOperator[, x])</code></pre><p>Compute the matrix representation of the <a href="#CompactBases.DiagonalOperator"><code>DiagonalOperator</code></a> <code>L</code>, optionally weighted by the function whose expansion coefficients are given by <code>x</code>.</p><p>Note that this is allocating and potentially inefficient (especially in the case of non-orthogonal bases), and should thus not be used in compute-intense code. Furthermore, if you have a Julia function <code>f</code> corresponding to the diagonal operator, it is most likely more reasonable to take the <code>R&#39;*QuasiDiagonal(f.(x))*R</code> approach instead.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/f18472803177f78645a4f30575071db5aa6cc270/src/linear_operators.jl#LL159-L171">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../inner_products/">« Inner products &amp; norms</a><a class="docs-footer-nextpage" href="../densities/">Densities »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 18 March 2021 00:02">Thursday 18 March 2021</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
