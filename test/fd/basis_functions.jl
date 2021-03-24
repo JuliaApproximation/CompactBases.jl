@@ -13,9 +13,8 @@
     @testset "Basis functions in restricted bases" begin
         N = 100
         L = 20.0
-        δx = L/(N+1)
 
-        B = FiniteDifferences((1:N) .- div(N,2), δx)
+        B = FiniteDifferences(range(-L, stop=L, length=N+2)[2:end-1])
         xx = axes(B,1)
         a = xx.domain
         x = range(a.left, stop=a.right, length=max(N,101))

@@ -151,11 +151,11 @@ end
 
 # *** Common
 
-α(B::AbstractFiniteDifferences) = α.(Ref(B), B.j[1:end-1])
+α(B::AbstractFiniteDifferences) = α.(Ref(B), 1:size(B,2)-1)
 α̃(B::AbstractFiniteDifferences) = α(B)
-β(B::AbstractFiniteDifferences) = β.(Ref(B), B.j)
-γ(B::AbstractFiniteDifferences) = γ.(Ref(B), B.j)
-δ(B::AbstractFiniteDifferences) = δ.(Ref(B), B.j[1:end-1])
+β(B::AbstractFiniteDifferences) = β.(Ref(B), 1:size(B,2))
+γ(B::AbstractFiniteDifferences) = γ.(Ref(B), 1:size(B,2))
+δ(B::AbstractFiniteDifferences) = δ.(Ref(B), 1:size(B,2)-1)
 δ̃(B::AbstractFiniteDifferences) = δ(B)
 
 # *** Restrictions
@@ -314,20 +314,21 @@ end
 
         δ² = step(B)^2
         dest.dl .= α̃(B)/δ²
-        dest.d .= -2β(B)/δ²
+        dest.d .= -2β(B, f)/δ²
         dest.du .= α(B)/δ²
     end
-    dest::BandedMatrix{T} -> begin
-        A = parent(Ac)
-        parent(A) == parent(B) ||
-            throw(ArgumentError("Cannot multiply functions on different grids"))
+    # dest::BandedMatrix{T} -> begin
+    #     A = parent(Ac)
+    #     parent(A) == parent(B) ||
+    #         throw(ArgumentError("Cannot multiply functions on different grids"))
 
-        dl,d,du = bandrange(dest)
-        δ² = step(B)^2
-        dest[Band(dl)] .= α̃(A,B,-1)/δ²
-        dest[Band(d)] .= -2β(A,B)/δ²
-        dest[Band(du)] .= α(A,B,1)/δ²
-    end
+    #     dl,d,du = bandrange(dest)
+    #     δ² = step(B)^2
+    #     dest[Band(dl)] .= α̃(A,B,-1)/δ²
+    #     # Need to include f here
+    #     dest[Band(d)] .= -2β(A,B)/δ²
+    #     dest[Band(du)] .= α(A,B,1)/δ²
+    # end
 end
 
 # *** Implicit derivatives
@@ -408,9 +409,6 @@ function implicit_lhs(::Uniform, B::BasisOrRestricted{<:ImplicitFiniteDifference
         M.dv .= 4
         M.ev .= 1
 
-        # # Eq. (20ff), Muller (1999).
-        # j₁ == 1 && !iszero(Z) && (M.dv[1] += √3 - 2)
-
         # f'  =   M₁⁻¹*Δ₁*f   Eq. (19)
         M /= 6
     elseif difforder == 2
@@ -453,7 +451,7 @@ LazyArrays._simplify(::typeof(*), A::AdjointBasisOrRestricted{B}, D::Derivative,
         implicit_derivative(T, ApplyQuasiArray(*,A,D,C), 1)
 
 LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{B}, ::QuasiAdjoint{T,<:Derivative}, ::Derivative, ::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = Val(true)
-LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{B}, Dc::QuasiAdjoint{T,<:Derivative}, D::Derivative, A::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = 
+LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{B}, Dc::QuasiAdjoint{T,<:Derivative}, D::Derivative, A::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} =
         implicit_derivative(T, ApplyQuasiArray(*,Ac,Dc,D,A), 2)
 
 # *** Coulomb derivatives
@@ -478,23 +476,63 @@ LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{B}, Dc::QuasiAdjo
 #
 # - Patchkovskii, S., & Muller, H. (2016). Simple, Accurate, and
 #   Efficient Implementation of 1-Electron Atomic Time-Dependent
-#   SchröDinger Equation in Spherical Coordinates. Computer Physics
+#   Schrödinger Equation in Spherical Coordinates. Computer Physics
 #   Communications, 199,
 #   153–169. http://dx.doi.org/10.1016/j.cpc.2015.10.014
 
 gradient_correction!(∂, B::AbstractFiniteDifferences, Z, ℓ) = ∂
 
-function materialize(M::Mul{<:Any, <:Tuple{
-    <:AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
-    <:CoulombDerivative,
-    <:BasisOrRestricted{<:AbstractFiniteDifferences}}}) where T
-    Ac,CD,B = M.args
-    D = CD.D
-    ∂ = Ac*D*B
-    if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
-        gradient_correction!(∂, parent(B), CD.Z, CD.ℓ)
-    end
+function gradient_correction!(∂::ImplicitDerivative, ::Uniform, B::ImplicitFiniteDifferences, Z, ℓ)
+    # This is a correction for the gradient on the half-line to
+    # approximately restore anti-Hermiticity, cf. Eq. (20ff), Muller
+    # (1999).
+
+    ρ = step(B)
+
+    ∂.Δ[1,1] += (√3 - 2)/2ρ
+    ∂.M[1,1] += (√3 - 2)/6
+
+    ∂.M⁻¹ = factorize(∂.M)
     ∂
+end
+
+function gradient_correction!(∂::ImplicitDerivative, ::NonUniform, B::ImplicitFiniteDifferences, Z, ℓ)
+    Z == 0 && return ∂
+    a = B.r[1]
+    b = B.r[2] - a
+    if ℓ == 0
+        # Eq. (31), Patchkovskii (2016)
+        num = (a^2 + b*a + b^2)*(2*(a+b)*(a+2b)*a*Z - 6a^2 - 15b*a - 8b^2)
+        ∂.Δ[1,1] = -(a+b)^2*(a+2b)*(2a^3*Z + b*a*(3 - 2b*Z) - 6a^2 + b^2)/(a*b*num)
+        ∂.M[1,1] = (a+b)^2*(a+2b)*((a+b)*a*Z - 3a - b)/num
+        ∂.M[1,2] = a^2*(a+2b)*((a+b)*a*Z - 3a - 2b)/num
+    end
+    ∂.M⁻¹ = factorize(∂.M)
+    ∂
+end
+
+gradient_correction!(∂, B::ImplicitFiniteDifferences, Z, ℓ) =
+    gradient_correction!(∂, distribution(B), B::ImplicitFiniteDifferences, Z, ℓ)
+
+@materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
+                        CD::CoulombDerivative,
+                        B::BasisOrRestricted{<:AbstractFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 1)
+    end
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        D = CD.D
+
+        copyto!(dest, ApplyQuasiArray(*,Ac,D,A))
+        if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+            gradient_correction!(dest, parent(B), CD.Z, CD.ℓ)
+        end
+        dest
+    end
 end
 
 function laplacian_correction!(∂²::AbstractMatrix, B::StaggeredFiniteDifferences, Z, ℓ)
@@ -528,7 +566,7 @@ function laplacian_correction!(∂²::ImplicitDerivative, ::NonUniform, B::Impli
     if ℓ == 0
         # Eq. (34), Patchkovskii (2016)
         num = b*(a*(3a+4b)*Z - 6*(a+b))
-        ∂².Δ[1,1] = 2*(a+b)*(6a - (3a - b)*(a+b)*Z)/(a^2*num) # /local_step(B, 1)
+        ∂².Δ[1,1] = 2*(a+b)*(6a - (3a - b)*(a+b)*Z)/(a^2*num)
         ∂².M[1,1] = (a+b)*(a*(a+b)*(a+3b)*Z - 3*(a^2 + 3b*a + b^2))/(3a*num)
         ∂².M[1,2] = (a^3*(-Z) + a^2*(b*Z+3) + b*a*(2*b*Z-3) - 3*b^2)/(3*num)
     else
@@ -550,33 +588,74 @@ laplacian_correction!(∂²::ImplicitDerivative, B::ImplicitFiniteDifferences, Z
 
 laplacian_correction!(∂², B::AbstractFiniteDifferences, Z, ℓ) = ∂²
 
-function materialize(M::Mul{<:Any, <:Tuple{
-    <:AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
-    <:QuasiAdjoint{T,<:CoulombDerivative},
-    <:CoulombDerivative,
-    <:BasisOrRestricted{<:AbstractFiniteDifferences}}}) where T
-    Ac,CDc,CD,B = M.args
-    @assert parent(CDc).Z == CD.Z
-    Dc = adjoint(parent(CDc).D)
-    D = CD.D
-    ∂² = Ac*Dc*D*B
-    if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
-        laplacian_correction!(∂², parent(B), CD.Z, CD.ℓ)
+
+@materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
+                        CDc::QuasiAdjoint{<:Any,<:CoulombDerivative},
+                        CD::CoulombDerivative,
+                        B::BasisOrRestricted{<:AbstractFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 2)
     end
-    ∂²
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        @assert parent(CDc).Z == CD.Z
+        Dc = adjoint(parent(CDc).D)
+        D = CD.D
+
+        copyto!(dest, ApplyQuasiArray(*,Ac,Dc,D,A))
+        if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+            laplacian_correction!(dest, parent(B), CD.Z, CD.ℓ)
+        end
+        dest
+    end
 end
 
-function materialize(M::Mul{<:Any, <:Tuple{
-    <:AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
-    <:QuasiAdjoint{T,<:CoulombDerivative},
-    <:QuasiDiagonal,
-    <:CoulombDerivative,
-    <:BasisOrRestricted{<:AbstractFiniteDifferences}}}) where T
-    Ac,CDc,O,CD,B = M.args
+@materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
+                        CDc::QuasiAdjoint{<:Any,<:CoulombDerivative},
+                        O::QuasiDiagonal,
+                        CD::CoulombDerivative,
+                        B::BasisOrRestricted{<:AbstractFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 2)
+    end
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        @assert parent(CDc).Z == CD.Z
+        Dc = adjoint(parent(CDc).D)
+        D = CD.D
+
+        copyto!(dest, ApplyQuasiArray(*,Ac,Dc,O,D,A))
+        if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+            laplacian_correction!(dest, parent(B), CD.Z, CD.ℓ)
+        end
+        dest
+    end
+end
+
+
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{R}, ::CoulombDerivative, ::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}} = Val(true)
+function LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{R}, CD::CoulombDerivative, B::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}}
+    D = CD.D
+    ∂ = implicit_derivative(T, ApplyQuasiArray(*,Ac,D,B), 1)
+    if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+        gradient_correction!(∂, parent(B), CD.Z, CD.ℓ)
+    end
+    ∂
+end
+
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{R}, ::QuasiAdjoint{T,<:CoulombDerivative}, ::CoulombDerivative, ::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}} = Val(true)
+function LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{R}, CDc::QuasiAdjoint{T,<:CoulombDerivative}, CD::CoulombDerivative, B::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}}
     @assert parent(CDc).Z == CD.Z
     Dc = adjoint(parent(CDc).D)
     D = CD.D
-    ∂² = Ac*Dc*O*D*B
+
+    ∂² = implicit_derivative(T, ApplyQuasiArray(*,Ac,Dc,D,B), 2)
     if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
         laplacian_correction!(∂², parent(B), CD.Z, CD.ℓ)
     end

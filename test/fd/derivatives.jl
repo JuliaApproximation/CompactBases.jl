@@ -65,9 +65,10 @@
         ρ = 0.3
         Z = 1.0
         @testset "Singular origin=$(singular_origin)" for singular_origin = [true, false]
-            R = ImplicitFiniteDifferences(1:N, ρ, singular_origin, Z)
+            R = ImplicitFiniteDifferences(N, ρ)
             r = axes(R, 1)
-            D = Derivative(r)
+            D̃ = Derivative(r)
+            D = singular_origin ? CoulombDerivative(D̃, Z, 0) : D̃
 
             λ,δβ₁ = if singular_origin
                 √3 - 2, -Z*ρ*inv(12 - 10*Z*ρ)
@@ -99,9 +100,9 @@
             @test all(∂².Δ.ev .≈ 1/ρ^2)
 
             @test ∂².M isa SymTridiagonal
-            @test ∂².M[1,1] ≈ -(10-2δβ₁)/6
-            @test all(∂².M.dv[2:end] .≈ -10/6)
-            @test all(∂².M.ev .≈ -1/6)
+            @test ∂².M[1,1] ≈ (-1/2)*(-(10-2δβ₁)/6)
+            @test all(∂².M.dv[2:end] .≈ (-1/2)*(-10/6))
+            @test all(∂².M.ev .≈ (-1/2)*(-1/6))
         end
     end
 end
@@ -116,14 +117,7 @@ end
                                            (4,ImplicitFiniteDifferences)]
         @info "$B derivative accuracy"
         hs,ϵg,ϵh,ϵh′,pg,ph,ph′ = compute_derivative_errors(Ns, f, g, h, 1) do N
-            L = b-a
-            Δx = L/(N+1)
-            j = (1:N) .+ round(Int, a/Δx)
-            if B == StaggeredFiniteDifferences
-                StaggeredFiniteDifferences(N, Δx, 1.0, 0.0)
-            else
-                B(j, Δx)
-            end
+            B(range(a, stop=b, length=N+2)[2:end-1])
         end
 
         @test isapprox(pg, order, atol=0.03) || pg > order
@@ -132,10 +126,10 @@ end
     @testset "kind = StaggeredFiniteDifferences" begin
         dd = b-a
         @testset "$(label)" for (order,label,fun) = [(2.0, "Uniform", N -> (N,dd/(N+1))),
-                                                     (2.5, "Non-uniform", N -> (dd*(1 .- cos.(π*range(0,stop=1,length=N+2)[2:end-1]))/2,))]
+                                                     (2.0, "Non-uniform", N -> (dd*(1 .- cos.(π*range(0,stop=1,length=N+2)[2:end-1]))/2,))]
             @info "$(label) StaggeredFiniteDifferences derivative accuracy"
             hs,ϵg,ϵh,ϵh′,pg,ph,ph′ = compute_derivative_errors(Ns, x -> f(x-dd/2), x -> g(x-dd/2), x -> h(x-dd/2), 1) do N
-                StaggeredFiniteDifferences(fun(N)..., 1.0, 0.0)
+                StaggeredFiniteDifferences(fun(N)...)
             end
 
             @test isapprox(pg, order, atol=0.03) || pg > order
@@ -153,7 +147,7 @@ end
                                                (4,ImplicitFiniteDifferences)]
             @info "$B particle-in-a-box eigenvalues convergence rate"
             ϵλ,slopes,elapsed =
-                compute_diagonalization_errors(N -> B(1:N, L/(N+1)), test_particle_in_a_box,
+                compute_diagonalization_errors(N -> B(N, L/(N+1)), test_particle_in_a_box,
                                                Ns, L, nev,
                                                verbosity=1)
             for (p,o) in zip(slopes, [order,order-1,order-1])
@@ -174,9 +168,8 @@ end
         R = StaggeredFiniteDifferences(N, ρ)
         r = axes(R, 1)
 
-        D = Derivative(Base.axes(R,1))
-        ∇² = apply(*, R', D', D, R)
-        Tm = ∇² / -2
+        D = CoulombDerivative(Derivative(Base.axes(R,1)), 1, 0)
+        Tm = (R'D'D*R) / -2
         @test Tm isa SymTridiagonal
 
         V = R'*QuasiDiagonal((r -> -inv(r)).(r))*R
@@ -221,14 +214,9 @@ end
         @testset "kind = $B" for (order,B) in [(2,StaggeredFiniteDifferences),
                                                (4,ImplicitFiniteDifferences)]
             @info "$B hydrogen eigenvalues convergence rate"
-            ϵλ,slopes,elapsed = compute_diagonalization_errors(test_singular_scheme, Ns, ℓ, nev, verbosity=1) do N
-                if B == StaggeredFiniteDifferences
-                    ρ = rₘₐₓ/(N+0.5)
-                    StaggeredFiniteDifferences(N, ρ, Z)
-                else
-                    ρ = rₘₐₓ/(N+1)
-                    ImplicitFiniteDifferences(1:N, ρ, true, Z)
-                end
+            ϵλ,slopes,elapsed = compute_diagonalization_errors(test_singular_scheme, Ns, Z, ℓ, nev, verbosity=1) do N
+                ρ = B == StaggeredFiniteDifferences ? rₘₐₓ/(N+0.5) : rₘₐₓ/(N+1)
+                B(N, ρ)
             end
             for p in slopes
                 @test isapprox(p, order, atol=0.04) || p > order

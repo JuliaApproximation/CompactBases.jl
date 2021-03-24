@@ -147,8 +147,9 @@ function diagonalize_hamiltonian(H, R::B, nev, σ; method=:arnoldi_shift_invert)
     λ,ϕ
 end
 
-function get_kinetic_operator(R::B) where {B<:AbstractQuasiMatrix}
-    D = Derivative(Base.axes(R,1))
+function get_kinetic_operator(R::B, Z=0, ℓ=0) where {B<:AbstractQuasiMatrix}
+    D̃ = Derivative(Base.axes(R,1))
+    D = !iszero(Z) ? CoulombDerivative(D̃, Z, ℓ) : D̃
     apply(*, R', D', D, R) / -2
 end
 
@@ -166,7 +167,7 @@ function test_particle_in_a_box(R, L, nev; kwargs...) where {B<:AbstractQuasiMat
     λ,ϕ,r̃,R,δλ
 end
 
-function test_singular_scheme(R, ℓ, nev; kwargs...) where {B<:AbstractQuasiMatrix}
+function test_singular_scheme(R, Z, ℓ, nev; kwargs...) where {B<:AbstractQuasiMatrix}
     r = axes(R,1)
 
     n = 1:nev
@@ -175,7 +176,7 @@ function test_singular_scheme(R, ℓ, nev; kwargs...) where {B<:AbstractQuasiMat
     coulomb(r) = -inv(r)
     centrifugal(r) = ℓ*(ℓ+1)/2r^2
 
-    Tm = get_kinetic_operator(R) + R'*QuasiDiagonal(centrifugal.(r))*R
+    Tm = get_kinetic_operator(R, Z, ℓ) + R'*QuasiDiagonal(centrifugal.(r))*R
     V = R'*QuasiDiagonal(coulomb.(r))*R
     H = Tm + V
     λ,ϕ = diagonalize_hamiltonian(H, R, nev, 1.1λₐ[1]; kwargs...)

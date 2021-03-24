@@ -1,4 +1,4 @@
-abstract type AbstractFiniteDifferences{T,I<:Integer} <: Basis{T} end
+abstract type AbstractFiniteDifferences{T} <: Basis{T} end
 const RestrictedFiniteDifferences{T,B<:AbstractFiniteDifferences{T}} =
     RestrictedQuasiArray{T,2,B}
 const FiniteDifferencesOrRestricted = BasisOrRestricted{<:AbstractFiniteDifferences}
@@ -171,24 +171,19 @@ end
 
 # * Various finite differences
 # ** Cartesian finite differences
-struct FiniteDifferences{T,I} <: AbstractFiniteDifferences{T,I}
-    j::UnitRange{I}
-    Δx::T
+struct FiniteDifferences{T,R<:AbstractRange{T}} <: AbstractFiniteDifferences{T}
+    r::R
 end
-FiniteDifferences(j::UnitRange{I}, Δx::T) where {T<:Real,I<:Integer} =
-    FiniteDifferences{T,I}(j, Δx)
+FiniteDifferences(n::Integer, Δx::Real) = FiniteDifferences((1:n)*Δx)
 
-FiniteDifferences(n::I, Δx::T) where {T<:Real,I<:Integer} =
-    FiniteDifferences(1:n, Δx)
+locs(B::FiniteDifferences) = B.r
+step(B::FiniteDifferences) = step(B.r)
 
-locs(B::FiniteDifferences) = B.j*B.Δx
-step(B::FiniteDifferences{T}) where {T} = B.Δx
-
-IntervalSets.leftendpoint(B::FiniteDifferences) = (B.j[1]-1)*step(B)
-IntervalSets.rightendpoint(B::FiniteDifferences) = (B.j[end]+1)*step(B)
+IntervalSets.leftendpoint(B::FiniteDifferences) = B.r[1] - step(B)
+IntervalSets.rightendpoint(B::FiniteDifferences) = B.r[end] + step(B)
 
 show(io::IO, B::FiniteDifferences{T}) where {T} =
-    write(io, "Finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(B.Δx)")
+    write(io, "Finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(step(B))")
 
 # ** Staggered finite differences
 
@@ -237,7 +232,7 @@ r = 0. Supports non-uniform grids, c.f.
   10118–10125. http://dx.doi.org/10.1021/jp992144
 
 """
-struct StaggeredFiniteDifferences{T,V<:AbstractVector{T}} <: AbstractFiniteDifferences{T,Int}
+struct StaggeredFiniteDifferences{T,V<:AbstractVector{T}} <: AbstractFiniteDifferences{T}
     r::V
 
     # Uniform case
@@ -305,7 +300,7 @@ show(io::IO, B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T =
     write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by ρ = $(step(B))")
 
 # ** Implicit finite differences
-struct ImplicitFiniteDifferences{T,V<:AbstractVector{T}} <: AbstractFiniteDifferences{T,Int}
+struct ImplicitFiniteDifferences{T,V<:AbstractVector{T}} <: AbstractFiniteDifferences{T}
     r::V
 
     # Uniform case
