@@ -135,7 +135,7 @@ function densities()
     rr = 10.0 .^ range(-2, stop=log10(rmax), length=3000)
 
     for R in [FiniteDifferences(N, ρ),
-              StaggeredFiniteDifferences(ρmin, ρmax, α, rmax, 0.0),
+              StaggeredFiniteDifferences(ρmin, ρmax, α, rmax),
               FEDVR(range(0, stop=rmax, length=Nn), k),
               BSpline(LinearKnotSet(k, 0, rmax, Nn))]
         r = axes(R,1)
@@ -203,12 +203,12 @@ function diagonal_operators()
 
     ρ = 0.1/Z
     N = ceil(Int, rmax/ρ)
-    ufd = StaggeredFiniteDifferences(N, ρ, Z)
+    ufd = StaggeredFiniteDifferences(N, ρ)
 
     ρmin=0.1/Z
     ρmax=0.6
     α=0.002
-    nufd = StaggeredFiniteDifferences(ρmin, ρmax, α, rmax, Z)
+    nufd = StaggeredFiniteDifferences(ρmin, ρmax, α, rmax)
 
     fedvr = FEDVR(range(0, stop=rmax, length=20),
                   vcat(10,fill(7,18)))[:,2:end-1]
