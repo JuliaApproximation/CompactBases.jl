@@ -64,9 +64,9 @@
         N = 10
         ρ = 0.3
         Z = 1.0
+        R = ImplicitFiniteDifferences(N, ρ)
+        r = axes(R, 1)
         @testset "Singular origin=$(singular_origin)" for singular_origin = [true, false]
-            R = ImplicitFiniteDifferences(N, ρ)
-            r = axes(R, 1)
             D̃ = Derivative(r)
             D = singular_origin ? CoulombDerivative(D̃, Z, 0) : D̃
 
@@ -103,6 +103,26 @@
             @test ∂².M[1,1] ≈ (-1/2)*(-(10-2δβ₁)/6)
             @test all(∂².M.dv[2:end] .≈ (-1/2)*(-10/6))
             @test all(∂².M.ev .≈ (-1/2)*(-1/6))
+        end
+
+        @testset "Restricted bases" begin
+            R̃ = R[:, 1:5]
+            D = Derivative(axes(R̃, 1))
+
+            @test_throws DimensionMismatch R̃'D*R
+            @test_throws DimensionMismatch R'D*R̃
+            @test_throws DimensionMismatch R̃'D'D*R
+            @test_throws DimensionMismatch R'D'D*R̃
+
+            ∂ = R̃'D*R̃
+            @test ∂ isa CompactBases.ImplicitDerivative
+            @test size(∂) == (5,5)
+
+            ∂² = R̃'D'D*R̃
+            @test ∂² isa CompactBases.ImplicitDerivative
+            @test size(∂²) == (5,5)
+
+            @warn "Need to test correctness of ImplicitDerivative in restricted bases"
         end
     end
 end

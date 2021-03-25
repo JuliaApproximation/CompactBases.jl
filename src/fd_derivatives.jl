@@ -442,9 +442,13 @@ end
 implicit_lhs(B::BasisOrRestricted{<:ImplicitFiniteDifferences}, args...) =
     implicit_lhs(distribution(B), B, args...)
 
-implicit_derivative(::Type{T}, M, difforder) where T =
+function implicit_derivative(::Type{T}, M, difforder) where T
+    A = parent(first(M.args))
+    B = last(M.args)
+    A == B || throw(DimensionMismatch("Implicit finite-differences does not support different restrictions"))
     ImplicitDerivative(copyto!(similar(M, T), M),
                        implicit_lhs(last(M.args), difforder))
+end
 
 LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{B}, ::Derivative, ::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = Val(true)
 LazyArrays._simplify(::typeof(*), A::AdjointBasisOrRestricted{B}, D::Derivative, C::BasisOrRestricted{B})  where {T,B<:ImplicitFiniteDifferences{T}} =
