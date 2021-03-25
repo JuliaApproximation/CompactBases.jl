@@ -21,7 +21,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 [compat]
 BandedMatrices = "0.16"
 BlockBandedMatrices = "0.10"
-ContinuumArrays = "0.6.4"
+ContinuumArrays = "0.6.4, 0.7"
 FastGaussQuadrature = "0.4"
 FillArrays = "0.11"
 Formatting = "0.4"
