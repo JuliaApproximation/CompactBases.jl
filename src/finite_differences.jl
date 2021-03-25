@@ -2,6 +2,7 @@ abstract type AbstractFiniteDifferences{T} <: Basis{T} end
 const RestrictedFiniteDifferences{T,B<:AbstractFiniteDifferences{T}} =
     RestrictedQuasiArray{T,2,B}
 const FiniteDifferencesOrRestricted = BasisOrRestricted{<:AbstractFiniteDifferences}
+const AdjointFiniteDifferencesOrRestricted = AdjointBasisOrRestricted{<:AbstractFiniteDifferences}
 
 eltype(::AbstractFiniteDifferences{T}) where T = T
 
