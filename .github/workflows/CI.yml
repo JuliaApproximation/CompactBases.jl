@@ -16,9 +16,12 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          # - windows-latest
+          - windows-latest
         arch:
           - x64
+        exclude:
+          - os: windows-latest
+            version: '1.5'
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
@@ -74,7 +77,10 @@ jobs:
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
-      - run: |
+      - name: Run Doctests
+        # See https://github.com/actions/toolkit/issues/399
+        continue-on-error: true
+        run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
             using CompactBases
