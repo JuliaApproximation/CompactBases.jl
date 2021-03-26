@@ -66,6 +66,7 @@ const AdjointFEDVROrRestricted{T} = AdjointBasisOrRestricted{<:FEDVR{T}}
 axes(B::FEDVR) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(length(B.x)))
 size(B::FEDVR) = (ℵ₁, length(B.x))
 ==(A::FEDVR,B::FEDVR) = A.t == B.t && A.order == B.order
+Base.hash(B::FEDVR, h::UInt) = hash(B.t, hash(B.order, h))
 
 assert_compatible_bases(A::FEDVROrRestricted, B::FEDVROrRestricted) =
     parent(A) == parent(B) ||

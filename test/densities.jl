@@ -13,7 +13,7 @@
 
         @testset "$R" for (R,kind,rtol) in [
             (FiniteDifferences(N, δr), :orthogonal_uniform, 1e-14),
-            (StaggeredFiniteDifferences(δrmin, δrmax, α, rmax, 0.0), :orthogonal_non_uniform, 1e-14),
+            (StaggeredFiniteDifferences(δrmin, δrmax, α, rmax), :orthogonal_non_uniform, 1e-14),
             (FEDVR(range(0, stop=rmax, length=Nn), k), :orthogonal_non_uniform, 1e-14),
             (BSpline(LinearKnotSet(k, 0, rmax, Nn)), :non_orthogonal, 1e-5),
         ]
@@ -107,11 +107,10 @@
 
             @testset "$R" for (R,rtol) in [
                 (FiniteDifferences(N, δr), 1e-15),
-                (StaggeredFiniteDifferences(δrmin, δrmax, α, rmax, 0.0), 1e-15),
+                (StaggeredFiniteDifferences(δrmin, δrmax, α, rmax), 1e-15),
                 (FEDVR(range(0, stop=rmax, length=Nn), k), 1e-15),
                 (BSpline(LinearKnotSet(k, 0, rmax, Nn)), 1e-14),
             ]
-                display(R)
                 R̃ = R[:,1:ceil(Int, size(R,2))]
 
                 r = axes(R̃,1)

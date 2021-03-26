@@ -1,7 +1,8 @@
-abstract type AbstractFiniteDifferences{T,I<:Integer} <: Basis{T} end
+abstract type AbstractFiniteDifferences{T} <: Basis{T} end
 const RestrictedFiniteDifferences{T,B<:AbstractFiniteDifferences{T}} =
     RestrictedQuasiArray{T,2,B}
 const FiniteDifferencesOrRestricted = BasisOrRestricted{<:AbstractFiniteDifferences}
+const AdjointFiniteDifferencesOrRestricted = AdjointBasisOrRestricted{<:AbstractFiniteDifferences}
 
 eltype(::AbstractFiniteDifferences{T}) where T = T
 
@@ -10,6 +11,13 @@ size(B::AbstractFiniteDifferences) = (ℵ₁, length(locs(B)))
 
 distribution(B::AbstractFiniteDifferences) = distribution(locs(B))
 
+# step is only well-defined for uniform grids
+step(::Uniform, B::AbstractFiniteDifferences) = step(locs(B))
+# All-the-same, we define step for non-uniform grids to make the mass
+# matrix and derivative stencils work properly.
+step(::NonUniform, B::AbstractFiniteDifferences{T}) where T = one(T)
+step(B::AbstractFiniteDifferences) = step(distribution(B), B)
+
 """
     local_step(B, i)
 
@@ -17,13 +25,25 @@ The step size around grid point `i`. For uniform grids, this is
 equivalent to [`step`](@ref).
 """
 local_step(B::AbstractFiniteDifferences, _) = step(B)
-weight(B::AbstractFiniteDifferences{T}, _) where T = one(T)
-weights(B::AbstractFiniteDifferences{T}) where T = ones(T,size(B,2))
 
-inverse_weight(B::AbstractFiniteDifferences{T}, _) where T = one(T)
-inverse_weights(B::AbstractFiniteDifferences{T}) where T = ones(T,size(B,2))
+weight(::Uniform, B::AbstractFiniteDifferences{T}, _) where T = one(T)
+weight(::NonUniform, B::AbstractFiniteDifferences, j) = 1/√(local_step(B, j))
+weight(B::AbstractFiniteDifferences, j) = weight(distribution(B), B, j)
+
+weights( ::Uniform, B::AbstractFiniteDifferences{T}) where T = ones(T,size(B,2))
+weights(d::NonUniform, B::AbstractFiniteDifferences) = weight.(Ref(d), Ref(B), 1:size(B,2))
+weights(B::AbstractFiniteDifferences) = weights(distribution(B), B)
+
+inverse_weight(::Uniform, B::AbstractFiniteDifferences{T}, _) where T = one(T)
+inverse_weight(::NonUniform, B::AbstractFiniteDifferences, j) = √(local_step(B, j))
+inverse_weight(B::AbstractFiniteDifferences, j) = inverse_weight(distribution(B), B, j)
+
+inverse_weights( ::Uniform, B::AbstractFiniteDifferences{T}) where T = ones(T,size(B,2))
+inverse_weights(d::NonUniform, B::AbstractFiniteDifferences) = inverse_weight.(Ref(d), Ref(B), 1:size(B,2))
+inverse_weights(B::AbstractFiniteDifferences) = inverse_weights(distribution(B), B)
 
 ==(A::AbstractFiniteDifferences,B::AbstractFiniteDifferences) = locs(A) == locs(B)
+Base.hash(R::FD, h::UInt) where {FD<:AbstractFiniteDifferences} = hash(locs(R), hash(FD, h))
 
 assert_compatible_bases(A::FiniteDifferencesOrRestricted, B::FiniteDifferencesOrRestricted) =
     locs(A) == locs(B) ||
@@ -152,39 +172,21 @@ end
 
 # * Various finite differences
 # ** Cartesian finite differences
-struct FiniteDifferences{T,I} <: AbstractFiniteDifferences{T,I}
-    j::UnitRange{I}
-    Δx::T
+struct FiniteDifferences{T,R<:AbstractRange{T}} <: AbstractFiniteDifferences{T}
+    r::R
 end
-FiniteDifferences(j::UnitRange{I}, Δx::T) where {T<:Real,I<:Integer} =
-    FiniteDifferences{T,I}(j, Δx)
+FiniteDifferences(n::Integer, Δx::Real) = FiniteDifferences((1:n)*Δx)
 
-FiniteDifferences(n::I, Δx::T) where {T<:Real,I<:Integer} =
-    FiniteDifferences(1:n, Δx)
+locs(B::FiniteDifferences) = B.r
+step(B::FiniteDifferences) = step(B.r)
 
-locs(B::FiniteDifferences) = B.j*B.Δx
-step(B::FiniteDifferences{T}) where {T} = B.Δx
-
-IntervalSets.leftendpoint(B::FiniteDifferences) = (B.j[1]-1)*step(B)
-IntervalSets.rightendpoint(B::FiniteDifferences) = (B.j[end]+1)*step(B)
+IntervalSets.leftendpoint(B::FiniteDifferences) = B.r[1] - step(B)
+IntervalSets.rightendpoint(B::FiniteDifferences) = B.r[end] + step(B)
 
 show(io::IO, B::FiniteDifferences{T}) where {T} =
-    write(io, "Finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(B.Δx)")
+    write(io, "Finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(step(B))")
 
 # ** Staggered finite differences
-
-local_step(r::AbstractRange, _) = step(r)
-function local_step(r::AbstractVector, j)
-    if j == 1
-        (r[2] - r[1])
-    elseif j == length(r)
-        r[j] - r[j-1]
-    else
-        (r[j+1]-r[j-1])/2
-    end
-end
-
-schafer_corner_fix(ρ, Z) = 1/ρ^2*Z*ρ/8*(1 + Z*ρ)
 
 function log_lin_grid!(r, ρₘᵢₙ, ρₘₐₓ, α, js)
     0 < ρₘᵢₙ < Inf && 0 < ρₘₐₓ < Inf ||
@@ -231,72 +233,29 @@ r = 0. Supports non-uniform grids, c.f.
   10118–10125. http://dx.doi.org/10.1021/jp992144
 
 """
-struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B,D} <: AbstractFiniteDifferences{T,Int}
+struct StaggeredFiniteDifferences{T,V<:AbstractVector{T}} <: AbstractFiniteDifferences{T}
     r::V
-    Z::T
-    δβ₁::T # Correction used for bare Coulomb potentials, Eq. (22) Schafer2009
-    α::A
-    β::B
-    δ::D
 
     # Uniform case
-    function StaggeredFiniteDifferences(r::V, Z=one(T),
-                                        δβ₁=schafer_corner_fix(local_step(r,1), Z)) where {T,V<:AbstractRange{T}}
+    function StaggeredFiniteDifferences(r::V) where {T,V<:AbstractRange{T}}
         issorted(r) ||
             throw(ArgumentError("Node locations must be non-decreasing"))
+        2r[1] ≈ step(r) || throw(ArgumentError("First node location must be half grid step"))
 
-        N = length(r)
-        j = one(T):N
-        j² = j .^ 2
-        # Eq. (20), Schafer 2000
-        α = (j² ./ (j² .- one(T)/4))[1:N-1]
-        β = (j² .- j .+ one(T)/2) ./ (j² .- j .+ one(T)/4)
-
-        β[1] += δβ₁ * step(r)^2
-
-        new{T,V,typeof(α),typeof(β),typeof(α)}(r, T(Z), T(δβ₁), α, β, α)
+        new{T,V}(r)
     end
 
     # Arbitrary case
-    function StaggeredFiniteDifferences(r::V, Z=one(T),
-                                        δβ₁=schafer_corner_fix(local_step(r,1), Z)) where {T,V<:AbstractVector{T}}
+    function StaggeredFiniteDifferences(r::V) where {T,V<:AbstractVector{T}}
         issorted(r) ||
             throw(ArgumentError("Node locations must be non-decreasing"))
 
-        N = length(r)
-        α = zeros(T, N-1)
-        β = zeros(T, N)
-        γ = zeros(T, N)
-        δ = zeros(T, N-1)
-
-        r̃ = vcat(r, 2r[end]-r[end-1])
-        a = 2r[1]-r[2]
-        b,c,d = r[1],r[2],r[3]
-
-        for j = 1:N
-            if j < N
-                d = r̃[j+2]
-                # Eq. (A13) Krause 1999
-                δ[j] = 2/(√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
-                α[j] = δ[j]/(c-b)
-            end
-
-            # Eq. (A14) Krause 1999
-            fp = ((c+b)/2b)^2
-            fm = ((b+a)/2b)^2
-            β[j] = 1/(c-a)*(1/(c-b)*fp + 1/(b-a)*fm)
-
-            a,b,c = b,c,d
-        end
-
-        β[1] += δβ₁
-
-        new{T,V,typeof(α),typeof(β),typeof(δ)}(r, T(Z), T(δβ₁), α, β, δ)
+        new{T,V}(r)
     end
 
     # Constructor of uniform grid
-    StaggeredFiniteDifferences(n::Integer, ρ, args...) =
-        StaggeredFiniteDifferences(ρ*(1:n) .- ρ/2, args...)
+    StaggeredFiniteDifferences(n::Integer, ρ) =
+        StaggeredFiniteDifferences(ρ*(1:n) .- ρ/2)
 
     """
     StaggeredFiniteDifferences(rₘₐₓ::T, n::I, args...)
@@ -304,146 +263,95 @@ struct StaggeredFiniteDifferences{T,V<:AbstractVector{T},A,B,D} <: AbstractFinit
 Convenience constructor for [`StaggeredFiniteDifferences`](@ref) covering the
 open interval `(0,rₘₐₓ)` with `n` grid points.
 """
-    StaggeredFiniteDifferences(rₘₐₓ::T, n::I, args...) where {I<:Integer, T} =
-        StaggeredFiniteDifferences(n, rₘₐₓ/(n-one(T)/2), args...)
+    StaggeredFiniteDifferences(rₘₐₓ::T, n::I) where {I<:Integer, T} =
+        StaggeredFiniteDifferences(n, rₘₐₓ/(n-one(T)/2))
 
     # Constructor of log-linear grid
-    StaggeredFiniteDifferences(ρₘᵢₙ, ρₘₐₓ, α, n::Integer, args...) =
-        StaggeredFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, n::Integer), args...)
+    StaggeredFiniteDifferences(ρₘᵢₙ, ρₘₐₓ, α, n::Integer) =
+        StaggeredFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, n::Integer))
 
-    StaggeredFiniteDifferences(ρₘᵢₙ::T, ρₘₐₓ::T, α::T, rₘₐₓ::T, args...) where {T<:Real} =
-        StaggeredFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, rₘₐₓ), args...)
+    StaggeredFiniteDifferences(ρₘᵢₙ::T, ρₘₐₓ::T, α::T, rₘₐₓ::T) where {T<:Real} =
+        StaggeredFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, rₘₐₓ))
 end
 
 locs(B::StaggeredFiniteDifferences) = B.r
-# step is only well-defined for uniform grids
-step(B::StaggeredFiniteDifferences{<:Any,<:AbstractRange}) = step(B.r)
-# All-the-same, we define step for non-uniform grids to make the mass
-# matrix and derivative stencils work properly.
-step(B::StaggeredFiniteDifferences{T}) where T = one(T)
-local_step(B::StaggeredFiniteDifferences, j) = local_step(B.r, j)
+local_step(::Uniform, B::StaggeredFiniteDifferences, _) = step(B.r)
+function local_step(::NonUniform, B::StaggeredFiniteDifferences, j)
+    r = B.r
+    if j == 1
+        (r[2] - r[1])
+    elseif j == length(r)
+        r[j] - r[j-1]
+    else
+        (r[j+1]-r[j-1])/2
+    end
+end
+local_step(B::StaggeredFiniteDifferences, j) = local_step(distribution(B), B, j)
 
 IntervalSets.leftendpoint(B::StaggeredFiniteDifferences{T}) where T = zero(T)
 IntervalSets.rightendpoint(B::StaggeredFiniteDifferences{T}) where T = 2B.r[end]-B.r[end-1]
 
-weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
-weight(B::StaggeredFiniteDifferences, j) = 1/√(local_step(B, j))
-
-weights(B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T = ones(T, size(B,2))
-weights(B::StaggeredFiniteDifferences) = weight.(Ref(B), 1:size(B,2))
-
-inverse_weight(B::StaggeredFiniteDifferences{T,<:AbstractRange}, _) where T = one(T)
-inverse_weight(B::StaggeredFiniteDifferences, j) = √(local_step(B, j))
-
-inverse_weights(B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T = ones(T, size(B,2))
-inverse_weights(B::StaggeredFiniteDifferences) = inverse_weight.(Ref(B), 1:size(B,2))
-
-==(A::StaggeredFiniteDifferences,B::StaggeredFiniteDifferences) = locs(A) == locs(B) && A.Z == B.Z && A.δβ₁ == B.δβ₁
-
-show(io::IO, B::StaggeredFiniteDifferences{T}) where T =
-    write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points")
+function show(io::IO, B::StaggeredFiniteDifferences{T}) where T
+    ρ = Base.diff(B.r)
+    mi,ma = extrema(ρ)
+    write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points with spacing varying from $(mi) to $(ma)")
+end
 
 show(io::IO, B::StaggeredFiniteDifferences{T,<:AbstractRange}) where T =
     write(io, "Staggered finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by ρ = $(step(B))")
 
 # ** Implicit finite differences
-#=
-This is an implementation of finite difference scheme described in
+struct ImplicitFiniteDifferences{T,V<:AbstractVector{T}} <: AbstractFiniteDifferences{T}
+    r::V
 
-- Muller, H. G. (1999). An Efficient Propagation Scheme for the
-  Time-Dependent Schrödinger equation in the Velocity Gauge. Laser
-  Physics, 9(1), 138–148.
+    # Uniform case
+    function ImplicitFiniteDifferences(r::V) where {T,V<:AbstractRange{T}}
+        issorted(r) ||
+            throw(ArgumentError("Node locations must be non-decreasing"))
 
-where the first derivative is approximated as
-
-\[\partial f =
-\left(1+\frac{h^2}{6}\Delta_2\right)^{-1}
-\Delta_1 f
-\equiv
-M_1^{-1}\tilde{\Delta}_1 f,\]
-where
-\[M_1 \equiv
-\frac{1}{6}
-\begin{bmatrix}
-4+\lambda' & 1 &\\
-1 & 4 & 1\\
-& 1 & 4 & \ddots\\
-&&\ddots&\ddots\\
-\end{bmatrix},\]
-and
-\[\tilde{\Delta}_1 \equiv
-\frac{1}{2h}
-\begin{bmatrix}
-\lambda & 1 &\\
--1 &  & 1\\
-& -1 &  & \ddots\\
-&&\ddots&\ddots\\
-\end{bmatrix},\]
-
-where \(\lambda=\lambda'=\sqrt{3}-2\) for problems with a singularity
-at the boundary \(r=0\) and zero otherwise; and the second derivative
-as
-
-\[\partial^2 f =
-\left(1+\frac{h^2}{12}\Delta_2\right)^{-1}
-\Delta_2 f
-\equiv
--2M_2^{-1}\Delta_2 f,\]
-where
-\[M_2 \equiv
--\frac{1}{6}
-\begin{bmatrix}
-10-2\delta\beta_1 & 1 &\\
-1 & 10 & 1\\
-& 1 & 10 & \ddots\\
-&&\ddots&\ddots\\
-\end{bmatrix},\]
-and
-\[\Delta_2 \equiv
-\frac{1}{h^2}
-\begin{bmatrix}
--2(1+\delta\beta_1) & 1 &\\
-1 & -2 & 1\\
-& 1 & -2 & \ddots\\
-&&\ddots&\ddots\\
-\end{bmatrix},\]
-
-where, again, \(\delta\beta_1 = -Zh[12-10Zh]^{-1}\) is a correction
-introduced for problems singular at the origin.
-
-=#
-
-struct ImplicitFiniteDifferences{T,I} <: AbstractFiniteDifferences{T,I}
-    j::UnitRange{I}
-    Δx::T
-    # Used for radial problems with a singularity at r = 0.
-    λ::T
-    δβ₁::T
-end
-
-function ImplicitFiniteDifferences(j::UnitRange{I}, Δx::T, singular_origin::Bool=false, Z=zero(T)) where {T<:Real,I<:Integer}
-    λ,δβ₁ = if singular_origin
-        first(j) == 1 ||
-            throw(ArgumentError("Singular origin correction only valid when grid starts at Δx (i.e. `j[1] == 1`)"))
-        # Eqs. (20,17), Muller (1999)
-        (√3 - 2),(-Z*Δx/(12 - 10Z*Δx))
-    else
-        zero(T),zero(T)
+        new{T,V}(r)
     end
-    ImplicitFiniteDifferences{T,I}(j, Δx, λ, δβ₁)
+
+    # Arbitrary case
+    function ImplicitFiniteDifferences(r::V) where {T,V<:AbstractVector{T}}
+        issorted(r) ||
+            throw(ArgumentError("Node locations must be non-decreasing"))
+
+        new{T,V}(r)
+    end
+
+    # Constructor of uniform grid
+    ImplicitFiniteDifferences(n::Integer, ρ) =
+        ImplicitFiniteDifferences(ρ*(1:n))
+
+    """
+    ImplicitFiniteDifferences(rₘₐₓ::T, n::I, args...)
+
+Convenience constructor for [`ImplicitFiniteDifferences`](@ref) covering the
+open interval `(0,rₘₐₓ)` with `n` grid points.
+"""
+    ImplicitFiniteDifferences(rₘₐₓ::T, n::I) where {I<:Integer, T} =
+        ImplicitFiniteDifferences(n, rₘₐₓ/(n+1))
+
+    # Constructor of log-linear grid
+    ImplicitFiniteDifferences(ρₘᵢₙ, ρₘₐₓ, α, n::Integer) =
+        ImplicitFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, n::Integer))
+
+    ImplicitFiniteDifferences(ρₘᵢₙ::T, ρₘₐₓ::T, α::T, rₘₐₓ::T) where {T<:Real} =
+        ImplicitFiniteDifferences(log_lin_grid(ρₘᵢₙ, ρₘₐₓ, α, rₘₐₓ))
 end
 
-ImplicitFiniteDifferences(n::I, Δx::T, args...) where {T<:Real,I<:Integer} =
-    ImplicitFiniteDifferences(1:n, Δx, args...)
+locs(B::ImplicitFiniteDifferences) = B.r
+IntervalSets.leftendpoint(B::ImplicitFiniteDifferences) = B.r[1] - local_step(B,1)
+IntervalSets.rightendpoint(B::ImplicitFiniteDifferences) = B.r[end] + local_step(B,length(B.r))
 
-locs(B::ImplicitFiniteDifferences) = B.j*B.Δx
-step(B::ImplicitFiniteDifferences{T}) where {T} = B.Δx
-
-IntervalSets.leftendpoint(B::ImplicitFiniteDifferences) = (B.j[1]-1)*step(B)
-IntervalSets.rightendpoint(B::ImplicitFiniteDifferences) = (B.j[end]+1)*step(B)
+ContinuumArrays.MemoryLayout(::Type{<:BasisOrRestricted{<:ImplicitFiniteDifferences}}) = ContinuumArrays.BasisLayout()
+ContinuumArrays.MemoryLayout(::Type{<:AdjointBasisOrRestricted{<:ImplicitFiniteDifferences}}) = ContinuumArrays.AdjointBasisLayout()
 
 show(io::IO, B::ImplicitFiniteDifferences{T}) where {T} =
-    write(io, "Implicit finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(B.Δx)")
+    write(io, "Implicit finite differences basis {$T} on $(axes(B,1).domain) with $(size(B,2)) points spaced by Δx = $(step(B))")
+
+# *** Implicit finite-differences derivatives
 
 mutable struct ImplicitDerivative{T,Tri,Mat,MatFact} <: AbstractMatrix{T}
     Δ::Tri
@@ -451,7 +359,7 @@ mutable struct ImplicitDerivative{T,Tri,Mat,MatFact} <: AbstractMatrix{T}
     M⁻¹::MatFact
     c::T
 end
-ImplicitDerivative(Δ::Tri, M::Mat, c::T) where {T,Tri,Mat} =
+ImplicitDerivative(Δ::Tri, M::Mat, c::T=true) where {T,Tri,Mat} =
     ImplicitDerivative(Δ, M, factorize(M), c)
 
 Base.show(io::IO, ∂::ND) where {ND<:ImplicitDerivative} =
@@ -473,6 +381,9 @@ Base.:(*)(a::T,∂::ND) where {T<:Number,ND<:ImplicitDerivative} =
 Base.:(/)(∂::ND,a::T) where {T<:Number,ND<:ImplicitDerivative} =
     ∂ * inv(a)
 
+Base.complex(∂::ImplicitDerivative) =
+    ImplicitDerivative(complex(∂.Δ), complex(∂.M), complex(∂.c))
+
 function LinearAlgebra.mul!(y::Y, ∂::ND, x::X,
                             α::Number=true, β::Number=false) where {Y<:AbstractVector,
                                                                     ND<:ImplicitDerivative,
@@ -491,7 +402,7 @@ function Base.copyto!(y::Y, ∂::Mul{<:Any,Tuple{<:ImplicitDerivative, X}}) wher
 end
 
 for op in [:(+), :(-)]
-    for Mat in [:Diagonal, :Tridiagonal, :SymTridiagonal, :UniformScaling]
+    for Mat in [:Diagonal, :UniformScaling]
         @eval begin
             function Base.$op(∂::ND, B::$Mat) where {ND<:ImplicitDerivative}
                 B̃ = inv(∂.c)*∂.M*B
@@ -500,6 +411,20 @@ for op in [:(+), :(-)]
         end
     end
 end
+
+function Base.:(*)(∂::ImplicitDerivative{T}, x::AbstractVector{U}) where {T,U}
+    size(∂, 2) == size(x,1) ||
+        throw(DimensionMismatch("Number of rows of x $(size(x,1)) does not agree with number of columns of ∂ $(size(∂,2))"))
+    mul!(similar(x, promote_type(T, U)), ∂, x)
+end
+
+function Base.:(*)(x::Adjoint{T,<:AbstractVector{T}}, ∂::ImplicitDerivative{U}) where {T,U}
+    size(∂, 1) == size(x,2) ||
+        throw(DimensionMismatch("Number of columns of x $(size(x,2)) does not agree with number of rows of ∂ $(size(∂,1))"))
+    lmul!(∂.c, rdiv!(copy(x), ∂.M⁻¹)*∂.Δ)
+end
+
+# *** Implicit finite-differences derivative factorizations
 
 struct ImplicitFactorization{TriFact,Mat}
     Δ⁻¹::TriFact
