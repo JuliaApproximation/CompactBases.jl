@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Inner products &amp; norms · CompactBases.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><script src="../assets/latex.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.svg" alt="CompactBases.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">CompactBases.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li class="is-active"><a class="tocitem" href>Inner products &amp; norms</a><ul class="internal"><li><a class="tocitem" href="#Inner-products-1"><span>Inner products</span></a></li><li><a class="tocitem" href="#Norms-1"><span>Norms</span></a></li><li><a class="tocitem" href="#Caveats-for-non-orthogonal-bases-1"><span>Caveats for non-orthogonal bases</span></a></li></ul></li><li><span class="tocitem">Operators</span><ul><li><a class="tocitem" href="../diagonal_operators/">Diagonal operators</a></li></ul></li><li><a class="tocitem" href="../densities/">Densities</a></li><li><span class="tocitem">Finite-differences</span><ul><li><a class="tocitem" href="../fd_overview/">Overview</a></li><li><a class="tocitem" href="../fd_non_uniform/">Non-uniform grids</a></li></ul></li><li><span class="tocitem">B-splines</span><ul><li><a class="tocitem" href="../bsplines/theory/">Theory</a></li><li><input class="collapse-toggle" id="menuitem-7-2" type="checkbox"/><label class="tocitem" for="menuitem-7-2"><span class="docs-label">Usage</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../bsplines/usage/">Basis creation</a></li><li><a class="tocitem" href="../bsplines/knot_sets/">Knot sets</a></li><li><input class="collapse-toggle" id="menuitem-7-2-3" type="checkbox"/><label class="tocitem" for="menuitem-7-2-3"><span class="docs-label">Splines</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../bsplines/splines/">Spline creation &amp; evaluation</a></li><li><a class="tocitem" href="../bsplines/function_approximation/">Function approximation</a></li></ul></li><li><a class="tocitem" href="../bsplines/operators/">Approximating operators</a></li><li><input class="collapse-toggle" id="menuitem-7-2-5" type="checkbox"/><label class="tocitem" for="menuitem-7-2-5"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../bsplines/differentiation/">Differentiating functions</a></li><li><a class="tocitem" href="../bsplines/odes/">Ordinary differential equations</a></li><li><a class="tocitem" href="../bsplines/eigenproblems/">Eigenproblems</a></li></ul></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Inner products &amp; norms</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Inner products &amp; norms</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaApproximation/CompactBases.jl/blob/master/docs/src/inner_products.md#L" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Inner-products-and-norms-1"><a class="docs-heading-anchor" href="#Inner-products-and-norms-1">Inner products &amp; norms</a><a class="docs-heading-anchor-permalink" href="#Inner-products-and-norms-1" title="Permalink"></a></h1><h2 id="Inner-products-1"><a class="docs-heading-anchor" href="#Inner-products-1">Inner products</a><a class="docs-heading-anchor-permalink" href="#Inner-products-1" title="Permalink"></a></h2><p>The inner product of two functions is simply computed as</p><pre><code class="language-julia">julia&gt; B = FiniteDifferences(10, 0.1)
+Finite differences basis {Float64} on 0.0..1.1 with 10 points spaced by Δx = 0.1
+
+julia&gt; x = axes(B,1)
+Inclusion(0.0..1.1)
+
+julia&gt; c = B \ sin.(2π*x)
+10-element Array{Float64,1}:
+  0.5877852522924731
+  0.9510565162951535
+  0.9510565162951536
+  0.5877852522924732
+  1.2246467991473532e-16
+ -0.587785252292473
+ -0.9510565162951535
+ -0.9510565162951536
+ -0.5877852522924734
+ -2.4492935982947064e-16
+
+julia&gt; f = B*c
+QuasiArrays.ApplyQuasiArray{Float64,1,typeof(*),Tuple{FiniteDifferences{Float64,Int64},Array{Float64,1}}}(*, (Finite differences basis {Float64} on 0.0..1.1 with 10 points spaced by Δx = 0.1, [0.5877852522924731, 0.9510565162951535, 0.9510565162951536, 0.5877852522924732, 1.2246467991473532e-16, -0.587785252292473, -0.9510565162951535, -0.9510565162951536, -0.5877852522924734, -2.4492935982947064e-16]))
+
+julia&gt; d = B \ cos.(2π*x)
+10-element Array{Float64,1}:
+  0.8090169943749475
+  0.30901699437494745
+ -0.30901699437494734
+ -0.8090169943749473
+ -1.0
+ -0.8090169943749475
+ -0.30901699437494756
+  0.30901699437494723
+  0.8090169943749473
+  1.0
+
+julia&gt; g = B*d
+QuasiArrays.ApplyQuasiArray{Float64,1,typeof(*),Tuple{FiniteDifferences{Float64,Int64},Array{Float64,1}}}(*, (Finite differences basis {Float64} on 0.0..1.1 with 10 points spaced by Δx = 0.1, [0.8090169943749475, 0.30901699437494745, -0.30901699437494734, -0.8090169943749473, -1.0, -0.8090169943749475, -0.30901699437494756, 0.30901699437494723, 0.8090169943749473, 1.0]))
+
+julia&gt; f&#39;f
+0.5000000000000001
+
+julia&gt; f&#39;g
+-3.0044051106072847e-17
+
+julia&gt; g&#39;g
+0.5</code></pre><h2 id="Norms-1"><a class="docs-heading-anchor" href="#Norms-1">Norms</a><a class="docs-heading-anchor-permalink" href="#Norms-1" title="Permalink"></a></h2><p>Similarly, norms are easily computed as</p><pre><code class="language-julia">julia&gt; norm(f)
+0.7071067811865476
+
+julia&gt; norm(g)
+0.7071067811865476</code></pre><p>For orthogonal bases, other <span>$p$</span>-norms are also available:</p><pre><code class="language-julia">julia&gt; norm(g,1)
+0.647213595499958
+
+julia&gt; norm(g,Inf)
+1.0</code></pre><h2 id="Caveats-for-non-orthogonal-bases-1"><a class="docs-heading-anchor" href="#Caveats-for-non-orthogonal-bases-1">Caveats for non-orthogonal bases</a><a class="docs-heading-anchor-permalink" href="#Caveats-for-non-orthogonal-bases-1" title="Permalink"></a></h2><p>Also for B-splines, the inner products and norms can be computed as above:</p><pre><code class="language-julia">julia&gt; R = BSpline(LinearKnotSet(7, 0.0, 1.0, 3))[:,2:end-1]
+BSpline{Float64} basis with LinearKnotSet(Float64) of order k = 7 on 0.0..1.0 (3 intervals), restricted to basis functions 2..8 ⊂ 1..9
+
+julia&gt; r = axes(R,1)
+Inclusion(0.0..1.0)
+
+julia&gt; c = R \ sin.(2π*r)
+7-element Array{Float64,1}:
+  0.35236622516315186
+  1.0329925571692269
+  1.6856805930016943
+ -5.528339670985388e-16
+ -1.6856805930016923
+ -1.0329925571692293
+ -0.35236622516315186
+
+julia&gt; f = R*c
+Spline on BSpline{Float64} basis with LinearKnotSet(Float64) of order
+k = 7 on 0.0..1.0 (3 intervals)
+
+julia&gt; f&#39;f
+0.4999507480992042
+
+julia&gt; norm(f)
+0.7070719539758342</code></pre><p>For unrestricted bases, the metric is stored in the B-spline basis object. Beware though, when working with <a href="../overview/#Restricted-bases-1">Restricted bases</a>, the metric needs to be recomputed every time an inner product is computed.</p><pre><code class="language-julia">julia&gt; @benchmark f&#39;f
+BenchmarkTools.Trial:
+  memory estimate:  928 bytes
+  allocs estimate:  25
+  --------------
+  minimum time:     5.112 μs (0.00% GC)
+  median time:      5.536 μs (0.00% GC)
+  mean time:        6.227 μs (2.44% GC)
+  maximum time:     1.539 ms (98.89% GC)
+  --------------
+  samples:          10000
+  evals/sample:     6
+
+julia&gt; @benchmark norm(f)
+BenchmarkTools.Trial:
+  memory estimate:  944 bytes
+  allocs estimate:  26
+  --------------
+  minimum time:     5.163 μs (0.00% GC)
+  median time:      5.605 μs (0.00% GC)
+  mean time:        6.209 μs (2.26% GC)
+  maximum time:     1.415 ms (99.13% GC)
+  --------------
+  samples:          10000
+  evals/sample:     6</code></pre><p>When working with non-orthogonal basis functions, such as B-splines, it is therefore advised to explicitly compute the metric once and use that for all inner products and norms:</p><pre><code class="language-julia">julia&gt; S = R&#39;R
+7×7 BandedMatrix{Float64,Array{Float64,2},Base.OneTo{Int64}}:
+ 0.0368555    0.0285178   0.0102464    0.00267575  0.000472084  4.3428e-5   2.70996e-8
+ 0.0285178    0.0492836   0.0347641    0.0176553   0.00640938   0.00142346  4.3428e-5
+ 0.0102464    0.0347641   0.0402597    0.0319871   0.0180037    0.00640938  0.000472084
+ 0.00267575   0.0176553   0.0319871    0.0380685   0.0319871    0.0176553   0.00267575
+ 0.000472084  0.00640938  0.0180037    0.0319871   0.0402597    0.0347641   0.0102464
+ 4.3428e-5    0.00142346  0.00640938   0.0176553   0.0347641    0.0492836   0.0285178
+ 2.70996e-8   4.3428e-5   0.000472084  0.00267575  0.0102464    0.0285178   0.0368555
+
+julia&gt; @benchmark dot(c,S,c)
+BenchmarkTools.Trial:
+  memory estimate:  16 bytes
+  allocs estimate:  1
+  --------------
+  minimum time:     80.383 ns (0.00% GC)
+  median time:      88.495 ns (0.00% GC)
+  mean time:        98.239 ns (1.42% GC)
+  maximum time:     6.183 μs (98.38% GC)
+  --------------
+  samples:          10000
+  evals/sample:     944</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../diagonal_operators/">Diagonal operators »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 26 March 2021 08:22">Friday 26 March 2021</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
