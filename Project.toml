@@ -1,7 +1,7 @@
 name = "CompactBases"
 uuid = "2c0377a8-7469-4ebd-be0f-82e501f20078"
 authors = ["Stefanos Carlström <stefanos.carlstrom@gmail.com>"]
-version = "0.3.0"
+version = "0.3.1"
 
 [deps]
 BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
