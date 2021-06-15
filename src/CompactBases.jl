@@ -7,13 +7,13 @@ import Base: eltype, axes, size, ==, getindex, checkbounds, copyto!, similar, sh
 import Base.Broadcast: materialize
 
 using ContinuumArrays
-import ContinuumArrays: Basis, ℵ₁, Derivative, Inclusion, @simplify,
+import ContinuumArrays: Basis, ℵ₁, Derivative, Inclusion, @simplify, simplifiable, _simplify,
     AbstractQuasiArrayApplyStyle
 
 using QuasiArrays
 import QuasiArrays: AbstractQuasiMatrix, QuasiAdjoint, MulQuasiArray,
     PInvQuasiMatrix, InvQuasiMatrix, QuasiDiagonal,
-    BroadcastQuasiArray, SubQuasiArray
+    BroadcastQuasiArray, SubQuasiArray, LazyQuasiMatrix
 
 using IntervalSets
 
@@ -45,6 +45,8 @@ include("quadrature.jl")
 include("skewtridiag.jl")
 
 include("materialize_dsl.jl")
+
+include("coulomb_derivative.jl")
 
 include("fornberg.jl")
 include("finite_differences.jl")

@@ -1,5 +1,3 @@
-struct FEDVRStyle <: AbstractQuasiArrayApplyStyle end
-
 # * Diagonal matrices
 DiagonalBlockDiagonal(A::AbstractMatrix, rows, cols) =
     BandedBlockBandedMatrix(A, rows,cols, (0,0), (0,0))

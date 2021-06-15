@@ -123,6 +123,7 @@ BSpline(t::AbstractKnotSet; k′=3) = BSpline(t, num_quadrature_points(order(t),
 axes(B::BSpline) = (Inclusion(first(B.t)..last(B.t)), Base.OneTo(numfunctions(B.t)))
 size(B::BSpline) = (ℵ₁, numfunctions(B.t))
 ==(A::BSpline,B::BSpline) = A.t == B.t
+Base.hash(B::BSpline, h::UInt) = hash(B.t, h)
 
 distribution(B::BSpline) = distribution(B.t)
 
@@ -252,8 +253,6 @@ Base.show(io::IO, spline::SplineVector) =
 Base.show(io::IO, spline::SplineMatrix) =
     write(io, "$(size(spline, 2))d spline on $(spline.args[1])")
 
-struct BSplineStyle <: AbstractQuasiArrayApplyStyle end
-
 # * Matrix construction
 
 function Matrix(::UndefInitializer, A::BSplineOrRestricted{T}, B::BSplineOrRestricted{T}, ::Type{U}=T) where {T,U}
@@ -282,7 +281,6 @@ end
 # * Mass matrix
 @materialize function *(Ac::AdjointBSplineOrRestricted,
                         B::BSplineOrRestricted)
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
@@ -298,7 +296,6 @@ metric(B::BSpline) = B.S
 @materialize function *(Ac::AdjointBSplineOrRestricted,
                         D::QuasiDiagonal,
                         B::BSplineOrRestricted)
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end
@@ -314,7 +311,6 @@ end
                         D::QuasiDiagonal,
                         E::QuasiDiagonal,
                         B::BSplineOrRestricted)
-    BSplineStyle
     T -> begin
         Matrix(undef, parent(Ac), B, T)
     end

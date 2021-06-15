@@ -15,7 +15,9 @@ unrestricted_basis(R::AbstractQuasiMatrix) = R
 unrestricted_basis(R::RestrictedQuasiArray) = parent(R)
 
 ==(A::BasisOrRestricted, B::BasisOrRestricted) =
-    unrestricted_basis(A) == unrestricted_basis(B)
+    unrestricted_basis(A) == unrestricted_basis(B) && indices(A,2) == indices(B,2)
+
+Base.hash(B::RestrictedQuasiArray, h::UInt) = hash(indices(B,2), hash(parent(B), h))
 
 restriction_extents(::Basis) = 0,0
 function restriction_extents(B̃::RestrictedQuasiArray)
@@ -25,7 +27,7 @@ function restriction_extents(B̃::RestrictedQuasiArray)
 end
 
 restriction(B) = Diagonal(Ones{Int}(size(B,2)))
-restriction(B̃::RestrictedQuasiArray) = last(LazyArrays.arguments(B̃))
+restriction(B̃::RestrictedQuasiArray) = last(LazyArrays.arguments(LazyArrays.ApplyLayout{typeof(*)}(), B̃))
 
 function combined_restriction_selection(A,B)
     parent(A) == parent(B) ||

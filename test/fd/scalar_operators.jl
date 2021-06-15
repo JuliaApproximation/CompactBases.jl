@@ -53,32 +53,29 @@ end
 
         x = QuasiDiagonal(r)
 
-        apply_obj = applied(*, R', x, R)
-        @test LazyArrays.ApplyStyle(*, typeof(R'), typeof(x), typeof(R)) ==
-            CompactBases.FiniteDifferencesStyle()
-
-        A = apply(*, R', x, R)
+        A = R'x*R
         @test A isa Diagonal
 
-        a = apply(*, R̃', x, R)
+        a = R̃'x*R
         @test a isa BandedMatrix
         @test a == Matrix(A)[sel,:]
         @test bandwidths(a) == (-2,2)
 
-        a = apply(*, R', x, R̃)
+        a = R'x*R̃
         @test a isa BandedMatrix
         @test a == Matrix(A)[:,sel]
         @test bandwidths(a) == (2,-2)
 
-        a = apply(*, R̃', x, R̃)
-        @test a isa Diagonal
+        a = R̃'x*R̃
+        @test a isa BandedMatrix
+        @test isdiag(a)
         @test a == Matrix(A)[sel,sel]
 
         # Non-overlapping restrictions
-        a = apply(*, R̃', x, R′)
+        a = R̃'x*R′
         @test a isa BandedMatrix
         @test size(a) == (length(sel), length(sel2))
         @test iszero(a)
-        @test bandwidths(a) == (5,-5)
+        @test bandwidths(a) == (3,-5)
     end
 end

@@ -62,10 +62,12 @@ difffun(B::RestrictedFEDVR, n::Integer) = i -> diff(parent(B),n,i)
 derop!(A, B::FEDVROrRestricted, n::Integer) =
     set_elements!(difffun(B,n), A, B)
 
+ContinuumArrays.MemoryLayout(::Type{<:BasisOrRestricted{<:FEDVR}}) = ContinuumArrays.BasisLayout()
+ContinuumArrays.MemoryLayout(::Type{<:AdjointBasisOrRestricted{<:FEDVR}}) = ContinuumArrays.AdjointBasisLayout()
+
 @materialize function *(Ac::AdjointBasisOrRestricted{<:FEDVR},
                         D::Derivative,
                         B::BasisOrRestricted{<:FEDVR})
-    FEDVRStyle
     T -> begin
         Matrix(undef, B, T)
     end
@@ -82,7 +84,6 @@ end
                         Dc::QuasiAdjoint{<:Any,<:Derivative},
                         D::Derivative,
                         B::BasisOrRestricted{<:FEDVR})
-    FEDVRStyle
     T -> begin
         Matrix(undef, B, T)
     end

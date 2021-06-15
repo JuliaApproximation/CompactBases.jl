@@ -2,36 +2,165 @@
 # ** Three-point stencils
 
 # α = super-/subdiagonal of second derivative
+# α̃ = subdiagonal of second derivative, in case not same as superdiagonal
 # β = -1/2 diagonal of second derivative
 # γ = diagonal of first derivative
 # δ = super-/subdiagonal of first derivative
+
+# *** Cartesian finite-differences
 
 α(::FiniteDifferences{T}, ::Integer) where T = one(T)
 β(::FiniteDifferences{T}, ::Integer) where T = one(T)
 γ(::FiniteDifferences{T}, ::Integer) where T = zero(T)
 δ(::FiniteDifferences{T}, ::Integer) where T = one(T)
 
-α(B::StaggeredFiniteDifferences,    j::Integer)         = B.α[j]
-β(B::StaggeredFiniteDifferences,    j::Integer)         = B.β[j]
-γ( ::StaggeredFiniteDifferences{T},  ::Integer) where T = zero(T)
-δ(B::StaggeredFiniteDifferences,    j::Integer)         = B.δ[j]
+# *** Staggered finite-differences
 
-α(B::StaggeredFiniteDifferences) = B.α
-β(B::StaggeredFiniteDifferences) = B.β
+# Eq. (20), Schafer (2000)
+α(::Uniform,  ::StaggeredFiniteDifferences{T}, j::Integer) where T = j^2/(j^2 - one(T)/4)
+β(::Uniform, B::StaggeredFiniteDifferences{T}, j::Integer) where T = (j^2 - j + one(T)/2)/(j^2 - j + one(T)/4)
+
+α(d::Uniform, B::StaggeredFiniteDifferences) = α.(Ref(d), Ref(B), 1:length(B.r)-1)
+β(d::Uniform, B::StaggeredFiniteDifferences) = β.(Ref(d), Ref(B), 1:length(B.r))
+δ(d::Uniform, B::StaggeredFiniteDifferences) = α(d, B)
+
+function staggered_stencil_common(fun, B::StaggeredFiniteDifferences{T}, δN=0) where T
+    r = B.r
+    N = length(r)
+    v = zeros(T, N+δN)
+
+    r̃ = vcat(r, 2r[end]-r[end-1])
+    a = 2r[1]-r[2]
+    b,c,d = r[1],r[2],r[3]
+
+    for j = 1:N+δN
+        if j < N
+            d = r̃[j+2]
+        end
+        v[j] = fun(a,b,c,d)
+
+        a,b,c = b,c,d
+    end
+    v
+end
+
+function α(::NonUniform, B::StaggeredFiniteDifferences)
+    staggered_stencil_common(B, -1) do a,b,c,d
+        # Eq. (A13) Krause 1999
+        2/((c-b)*√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
+    end
+end
+
+function α(::NonUniform, B::StaggeredFiniteDifferences, f::Function)
+    staggered_stencil_common(B, -1) do a,b,c,d
+        rⱼ₊₁₂ = (b+c)/2
+        # Eq. (A13) Krause 1999
+        2f(rⱼ₊₁₂)/((c-b)*√((d-b)*(c-a)))*rⱼ₊₁₂^2/(b*c)
+    end
+end
+
+function β(::NonUniform, B::StaggeredFiniteDifferences)
+    staggered_stencil_common(B) do a,b,c,d
+        # Eq. (A14) Krause 1999
+        fp = ((c+b)/2b)^2
+        fm = ((b+a)/2b)^2
+        1/(c-a)*(1/(c-b)*fp + 1/(b-a)*fm)
+    end
+end
+
+function β(::NonUniform, B::StaggeredFiniteDifferences, f::Function)
+    staggered_stencil_common(B) do a,b,c,d
+        # Eq. (A14) Krause 1999
+        b⁻² = inv(b^2)
+        rⱼ₊₁₂ = (b+c)/2
+        rⱼ₋₁₂ = (a+b)/2
+        fp = rⱼ₊₁₂^2 * b⁻²
+        fm = rⱼ₋₁₂^2 * b⁻²
+        1/(c-a)*(f(rⱼ₊₁₂)/(c-b)*fp + f(rⱼ₋₁₂)/(b-a)*fm)
+    end
+end
+
+function δ(::NonUniform, B::StaggeredFiniteDifferences)
+    staggered_stencil_common(B, -1) do a,b,c,d
+        2/(√((d-b)*(c-a)))*((b+c)/2)^2/(b*c)
+    end
+end
+
+α(B::StaggeredFiniteDifferences, args...)   = α(distribution(B), B, args...)
+β(B::StaggeredFiniteDifferences, args...)   = β(distribution(B), B, args...)
 γ(B::StaggeredFiniteDifferences{T}) where T = zeros(T, length(B.r))
-δ(B::StaggeredFiniteDifferences) = B.δ
+δ(B::StaggeredFiniteDifferences)            = δ(distribution(B), B)
 
-α( ::ImplicitFiniteDifferences{T},  ::Integer) where T = one(T)
-β(B::ImplicitFiniteDifferences{T}, j::Integer) where T = one(T) + (j == 1 ? B.δβ₁ : zero(T))
-γ(B::ImplicitFiniteDifferences{T}, j::Integer) where T = (j == 1 ? B.λ : zero(T))
-δ( ::ImplicitFiniteDifferences{T},  ::Integer) where T = one(T)
+# *** Implicit finite-differences
 
-α(B::AbstractFiniteDifferences) = α.(Ref(B), B.j[1:end-1])
-β(B::AbstractFiniteDifferences) = β.(Ref(B), B.j)
-γ(B::AbstractFiniteDifferences) = γ.(Ref(B), B.j)
-δ(B::AbstractFiniteDifferences) = δ.(Ref(B), B.j[1:end-1])
+α( ::Uniform, B::ImplicitFiniteDifferences{T}) where T = ones(T, length(B.r)-1)
+α̃(d::Uniform, B::ImplicitFiniteDifferences) = α(d, B)
+β( ::Uniform, B::ImplicitFiniteDifferences{T}) where T = ones(T, length(B.r))
+γ( ::Uniform, B::ImplicitFiniteDifferences{T}) where T = zeros(T, length(B.r))
+δ( ::Uniform, B::ImplicitFiniteDifferences{T}) where T = ones(T, length(B.r)-1)
+δ̃(d::Uniform, B::ImplicitFiniteDifferences) = δ(d, B)
 
-for f in [:α, :δ]
+# Non-uniform, implicit finite differences, as described by
+# Patchkovskii (2016)
+
+function implicit_stencil_common(fun, B::ImplicitFiniteDifferences{T}, s=1, δN=0) where T
+    r = B.r
+    N = length(r)
+    v = zeros(T, N+δN)
+
+    r̃ = vcat(r[s:end], 2r[end]-r[end-1])
+    a = r̃[1]-(s > 1 ? r[s-1] : 0)
+    b = r̃[2]-r̃[1]
+    c = zero(T)
+    for j = 1:N+δN
+        if j < N - (s-1)
+            c = r̃[j+2]-r̃[j+1]
+        end
+
+        v[j] = fun(a,b,c)
+
+        a,b = b,c
+    end
+    v
+end
+
+function α̃(::NonUniform, B::ImplicitFiniteDifferences)
+    implicit_stencil_common(B, 2, -1) do a,b,c
+        2/(a*(a+b)) # Eq. (33)
+    end
+end
+
+function α(::NonUniform, B::ImplicitFiniteDifferences)
+    implicit_stencil_common(B, 1, -1) do a,b,c
+        2/(b*(a+b)) # Eq. (33)
+    end
+end
+
+function β(::NonUniform, B::ImplicitFiniteDifferences)
+    implicit_stencil_common(B) do a,b,c
+        1/(a*b) # Eq. (33), remember β is multiplied by -2
+    end
+end
+
+α(B::ImplicitFiniteDifferences) = α(distribution(B), B)
+α̃(B::ImplicitFiniteDifferences) = α̃(distribution(B), B)
+β(B::ImplicitFiniteDifferences) = β(distribution(B), B)
+γ(B::ImplicitFiniteDifferences) = γ(distribution(B), B)
+δ(B::ImplicitFiniteDifferences) = δ(distribution(B), B)
+δ̃(B::ImplicitFiniteDifferences) = δ̃(distribution(B), B)
+
+# *** Common
+
+α(B::AbstractFiniteDifferences) = α.(Ref(B), 1:size(B,2)-1)
+α̃(B::AbstractFiniteDifferences) = α(B)
+β(B::AbstractFiniteDifferences) = β.(Ref(B), 1:size(B,2))
+γ(B::AbstractFiniteDifferences) = γ.(Ref(B), 1:size(B,2))
+δ(B::AbstractFiniteDifferences) = δ.(Ref(B), 1:size(B,2)-1)
+δ̃(B::AbstractFiniteDifferences) = δ(B)
+
+# *** Restrictions
+
+for f in [:α, :α̃, :δ, :δ̃]
     @eval begin
         function $f(B̃::RestrictedFiniteDifferences)
             j = indices(B̃,2)
@@ -48,7 +177,7 @@ for f in [:β, :γ]
     end
 end
 
-for f in [:α, :β, :γ, :δ]
+for f in [:α, :α̃, :β, :γ, :δ, :δ̃]
     @eval begin
         function $f(Ã::BasisOrRestricted{<:AbstractFiniteDifferences},
                     B̃::BasisOrRestricted{<:AbstractFiniteDifferences},
@@ -63,6 +192,11 @@ end
 
 # ** Materialization
 
+non_symmetric_laplacian(::Uniform, B::ImplicitFiniteDifferences) = false
+non_symmetric_laplacian(::NonUniform, B::ImplicitFiniteDifferences) = true
+non_symmetric_laplacian(B::ImplicitFiniteDifferences) = non_symmetric_laplacian(distribution(B), B)
+non_symmetric_laplacian(::AbstractFiniteDifferences) = false
+
 function derivative_matrix(::Type{T}, Ac, B, diff_order) where T
     A = parent(Ac)
     parent(A) == parent(B) ||
@@ -70,7 +204,7 @@ function derivative_matrix(::Type{T}, Ac, B, diff_order) where T
     Ai,Bi = last(indices(A)), last(indices(B))
     if Ai == Bi
         n = length(Ai)
-        if diff_order == 1
+        if diff_order == 1 || non_symmetric_laplacian(parent(B))
             Tridiagonal(Vector{T}(undef, n-1),
                         Vector{T}(undef, n),
                         Vector{T}(undef, n-1))
@@ -88,7 +222,6 @@ end
 @materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
                         D::Derivative,
                         B::BasisOrRestricted{<:AbstractFiniteDifferences})
-    FiniteDifferencesStyle
     T -> begin
         derivative_matrix(T, Ac, B, 1)
     end
@@ -99,10 +232,9 @@ end
 
         # Central difference approximation
         μ = 2step(B)
-        d = δ(B)/μ
-        dest.dl .= -d
+        dest.dl .= -δ̃(B)/μ
         dest.d .= γ(B)/μ
-        dest.du .= d
+        dest.du .= δ(B)/μ
     end
     dest::BandedMatrix{T} -> begin
         A = parent(Ac)
@@ -112,9 +244,9 @@ end
         dl,d,du = bandrange(dest)
         # Central difference approximation
         μ = 2step(B)
-        dest[Band(dl)] .= -α(A,B,-1)/μ
+        dest[Band(dl)] .= -δ̃(A,B,-1)/μ
         dest[Band(d)] .= γ(A,B)/μ
-        dest[Band(du)] .= α(A,B,1)/μ
+        dest[Band(du)] .= δ(A,B,1)/μ
     end
 end
 
@@ -122,7 +254,6 @@ end
                         Dc::QuasiAdjoint{<:Any,<:Derivative},
                         D::Derivative,
                         B::BasisOrRestricted{<:AbstractFiniteDifferences})
-    FiniteDifferencesStyle
     T -> begin
         derivative_matrix(T, Ac, B, 2)
     end
@@ -135,6 +266,16 @@ end
         dest.dv .= -2β(B)/δ²
         dest.ev .= α(B)/δ²
     end
+    dest::Tridiagonal{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        δ² = step(B)^2
+        dest.dl .= α̃(B)/δ²
+        dest.d .= -2β(B)/δ²
+        dest.du .= α(B)/δ²
+    end
     dest::BandedMatrix{T} -> begin
         A = parent(Ac)
         parent(A) == parent(B) ||
@@ -142,15 +283,123 @@ end
 
         dl,d,du = bandrange(dest)
         δ² = step(B)^2
-        dest[Band(dl)] .= α(A,B,-1)/δ²
+        dest[Band(dl)] .= α̃(A,B,-1)/δ²
         dest[Band(d)] .= -2β(A,B)/δ²
         dest[Band(du)] .= α(A,B,1)/δ²
     end
 end
 
-# # *** Implicit derivatives
+@materialize function *(Ac::AdjointBasisOrRestricted{<:StaggeredFiniteDifferences},
+                        Dc::QuasiAdjoint{<:Any,<:Derivative},
+                        O::QuasiDiagonal,
+                        D::Derivative,
+                        B::BasisOrRestricted{<:StaggeredFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 2)
+    end
+    dest::SymTridiagonal{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
 
-function implicit_lhs(B::BasisOrRestricted{<:ImplicitFiniteDifferences{T}}, difforder) where T
+        δ² = step(B)^2
+        f = r -> O.diag[max(zero(T),r)]
+        dest.dv .= -2β(B,f)/δ²
+        dest.ev .= α(B,f)/δ²
+    end
+    dest::Tridiagonal{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        δ² = step(B)^2
+        dest.dl .= α̃(B)/δ²
+        dest.d .= -2β(B, f)/δ²
+        dest.du .= α(B)/δ²
+    end
+    # dest::BandedMatrix{T} -> begin
+    #     A = parent(Ac)
+    #     parent(A) == parent(B) ||
+    #         throw(ArgumentError("Cannot multiply functions on different grids"))
+
+    #     dl,d,du = bandrange(dest)
+    #     δ² = step(B)^2
+    #     dest[Band(dl)] .= α̃(A,B,-1)/δ²
+    #     # Need to include f here
+    #     dest[Band(d)] .= -2β(A,B)/δ²
+    #     dest[Band(du)] .= α(A,B,1)/δ²
+    # end
+end
+
+# *** Implicit derivatives
+
+#=
+This is an implementation of finite difference scheme described in
+
+- Muller, H. G. (1999). An Efficient Propagation Scheme for the
+  Time-Dependent Schrödinger equation in the Velocity Gauge. Laser
+  Physics, 9(1), 138–148.
+
+where the first derivative is approximated as
+
+\[\partial f =
+\left(1+\frac{h^2}{6}\Delta_2\right)^{-1}
+\Delta_1 f
+\equiv
+M_1^{-1}\tilde{\Delta}_1 f,\]
+where
+\[M_1 \equiv
+\frac{1}{6}
+\begin{bmatrix}
+4+\lambda' & 1 &\\
+1 & 4 & 1\\
+& 1 & 4 & \ddots\\
+&&\ddots&\ddots\\
+\end{bmatrix},\]
+and
+\[\tilde{\Delta}_1 \equiv
+\frac{1}{2h}
+\begin{bmatrix}
+\lambda & 1 &\\
+-1 &  & 1\\
+& -1 &  & \ddots\\
+&&\ddots&\ddots\\
+\end{bmatrix},\]
+
+where \(\lambda=\lambda'=\sqrt{3}-2\) for problems with a singularity
+at the boundary \(r=0\) and zero otherwise; and the second derivative
+as
+
+\[\partial^2 f =
+\left(1+\frac{h^2}{12}\Delta_2\right)^{-1}
+\Delta_2 f
+\equiv
+-2M_2^{-1}\Delta_2 f,\]
+where
+\[M_2 \equiv
+-\frac{1}{6}
+\begin{bmatrix}
+10-2\delta\beta_1 & 1 &\\
+1 & 10 & 1\\
+& 1 & 10 & \ddots\\
+&&\ddots&\ddots\\
+\end{bmatrix},\]
+and
+\[\Delta_2 \equiv
+\frac{1}{h^2}
+\begin{bmatrix}
+-2(1+\delta\beta_1) & 1 &\\
+1 & -2 & 1\\
+& 1 & -2 & \ddots\\
+&&\ddots&\ddots\\
+\end{bmatrix},\]
+
+where, again, \(\delta\beta_1 = -Zh[12-10Zh]^{-1}\) is a correction
+introduced for problems singular at the origin.
+
+=#
+
+function implicit_lhs(::Uniform, B::BasisOrRestricted{<:ImplicitFiniteDifferences{T}}, difforder) where T
     m = size(B,2)
     M = SymTridiagonal(Vector{T}(undef, m), Vector{T}(undef, m-1))
 
@@ -160,41 +409,259 @@ function implicit_lhs(B::BasisOrRestricted{<:ImplicitFiniteDifferences{T}}, diff
         M.dv .= 4
         M.ev .= 1
 
-        # Eq. (20ff), Muller (1999), λ = λ′ = √3 - 2, but only if
-        # `singular_origin==true`.
-        j₁ == 1 && (M.dv[1] += parent(B).λ)
-
+        # f'  =   M₁⁻¹*Δ₁*f   Eq. (19)
         M /= 6
     elseif difforder == 2
         M.dv .= 10
         M.ev .= 1
 
-        # Eq. (17), Muller (1999)
-        j₁ == 1 && (M.dv[1] -= 2parent(B).δβ₁)
-
-        M /= -6
+        # f'' = -2M₂⁻¹*Δ₂*f   Eq. (13)
+        M /= (-6)*(-2)
     end
 end
 
-# f'  =   M₁⁻¹*Δ₁*f   Eq. (19)
-# f'' = -2M₂⁻¹*Δ₂*f   Eq. (13)
-implicit_coeff(::Type{T}, difforder) where T =
-    [one(T), -2one(T)][difforder]
+function implicit_lhs(::NonUniform, B::BasisOrRestricted{<:ImplicitFiniteDifferences{T}}, difforder) where T
+    dl, d, du = if difforder == 1
+    elseif difforder == 2
+        # Eq. (33), Patchkovskii (2016)
+        dl = implicit_stencil_common(B, 2, -1) do a,b,c
+            (a^2 + a*b - b^2)/(6*a*(a+b))
+        end
+        d = implicit_stencil_common(B) do a,b,c
+            (a^2 + 3a*b + b^2)/(6*a*b)
+        end
+        du = implicit_stencil_common(B, 1, -1) do a,b,c
+            (-a^2 + a*b + b^2)/(6*b*(a+b))
+        end
+        dl, d, du
+    end
 
-implicit_derivative(::Type{T}, M, difforder) where T =
+    Tridiagonal(dl, d, du)
+end
+
+implicit_lhs(B::BasisOrRestricted{<:ImplicitFiniteDifferences}, args...) =
+    implicit_lhs(distribution(B), B, args...)
+
+function implicit_derivative(::Type{T}, M, difforder) where T
+    A = parent(first(M.args))
+    B = last(M.args)
+    A == B || throw(DimensionMismatch("Implicit finite-differences does not support different restrictions"))
     ImplicitDerivative(copyto!(similar(M, T), M),
-                       implicit_lhs(last(M.args), difforder),
-                       implicit_coeff(T, difforder))
+                       implicit_lhs(last(M.args), difforder))
+end
 
-materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
-    <:AdjointBasisOrRestricted{B},
-    <:Derivative,
-    <:BasisOrRestricted{B}}}) where {T,B<:ImplicitFiniteDifferences{T}} =
-        implicit_derivative(T, M, 1)
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{B}, ::Derivative, ::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = Val(true)
+LazyArrays._simplify(::typeof(*), A::AdjointBasisOrRestricted{B}, D::Derivative, C::BasisOrRestricted{B})  where {T,B<:ImplicitFiniteDifferences{T}} =
+        implicit_derivative(T, ApplyQuasiArray(*,A,D,C), 1)
 
-materialize(M::Mul{FiniteDifferencesStyle, <:Tuple{
-    <:AdjointBasisOrRestricted{B},
-    <:QuasiAdjoint{T,<:Derivative},
-    <:Derivative,
-    <:BasisOrRestricted{B}}}) where {T,B<:ImplicitFiniteDifferences{T}} =
-        implicit_derivative(T, M, 2)
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{B}, ::QuasiAdjoint{T,<:Derivative}, ::Derivative, ::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} = Val(true)
+LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{B}, Dc::QuasiAdjoint{T,<:Derivative}, D::Derivative, A::BasisOrRestricted{B}) where {T,B<:ImplicitFiniteDifferences{T}} =
+        implicit_derivative(T, ApplyQuasiArray(*,Ac,Dc,D,A), 2)
+
+# *** Coulomb derivatives
+
+# Below, we implement some corrections to the derivative matrices in
+# case of an attractive Coulomb problem [-∂²/2 - Z/r + ℓ(ℓ+1)/2r^2].
+#
+# For StaggeredFiniteDifferences, the correction is just a heuristic
+# quoted by
+#
+# - Schafer, K. J. (2009). Numerical Methods in Strong Field Physics. In
+#   T. Brabec (Eds.), (pp. 111–145). Springer.
+#
+# whereas for ImplicitFiniteDifferences, it is derived via Taylor
+# expansions, for the uniform case, see
+#
+# - Muller, H. G. (1999). An Efficient Propagation Scheme for the
+#   Time-Dependent Schrödinger equation in the Velocity Gauge. Laser
+#     Physics, 9(1), 138–148.
+#
+# and for the non-uniform case, see
+#
+# - Patchkovskii, S., & Muller, H. (2016). Simple, Accurate, and
+#   Efficient Implementation of 1-Electron Atomic Time-Dependent
+#   Schrödinger Equation in Spherical Coordinates. Computer Physics
+#   Communications, 199,
+#   153–169. http://dx.doi.org/10.1016/j.cpc.2015.10.014
+
+gradient_correction!(∂, B::AbstractFiniteDifferences, Z, ℓ) = ∂
+
+function gradient_correction!(∂::ImplicitDerivative, ::Uniform, B::ImplicitFiniteDifferences, Z, ℓ)
+    # This is a correction for the gradient on the half-line to
+    # approximately restore anti-Hermiticity, cf. Eq. (20ff), Muller
+    # (1999).
+
+    ρ = step(B)
+
+    ∂.Δ[1,1] += (√3 - 2)/2ρ
+    ∂.M[1,1] += (√3 - 2)/6
+
+    ∂.M⁻¹ = factorize(∂.M)
+    ∂
+end
+
+function gradient_correction!(∂::ImplicitDerivative, ::NonUniform, B::ImplicitFiniteDifferences, Z, ℓ)
+    Z == 0 && return ∂
+    a = B.r[1]
+    b = B.r[2] - a
+    if ℓ == 0
+        # Eq. (31), Patchkovskii (2016)
+        num = (a^2 + b*a + b^2)*(2*(a+b)*(a+2b)*a*Z - 6a^2 - 15b*a - 8b^2)
+        ∂.Δ[1,1] = -(a+b)^2*(a+2b)*(2a^3*Z + b*a*(3 - 2b*Z) - 6a^2 + b^2)/(a*b*num)
+        ∂.M[1,1] = (a+b)^2*(a+2b)*((a+b)*a*Z - 3a - b)/num
+        ∂.M[1,2] = a^2*(a+2b)*((a+b)*a*Z - 3a - 2b)/num
+    end
+    ∂.M⁻¹ = factorize(∂.M)
+    ∂
+end
+
+gradient_correction!(∂, B::ImplicitFiniteDifferences, Z, ℓ) =
+    gradient_correction!(∂, distribution(B), B::ImplicitFiniteDifferences, Z, ℓ)
+
+@materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
+                        CD::CoulombDerivative,
+                        B::BasisOrRestricted{<:AbstractFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 1)
+    end
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        D = CD.D
+
+        copyto!(dest, ApplyQuasiArray(*,Ac,D,A))
+        if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+            gradient_correction!(dest, parent(B), CD.Z, CD.ℓ)
+        end
+        dest
+    end
+end
+
+function laplacian_correction!(∂²::AbstractMatrix, B::StaggeredFiniteDifferences, Z, ℓ)
+    if ℓ == 0 && Z ≠ 0
+        ρ = local_step(B,1)
+        # Eq. (22) Schafer (2009)
+        δβ₁ = 1/ρ^2*Z*ρ/8*(1 + Z*ρ)
+        ∂²[1,1] -= 2δβ₁
+    end
+
+    ∂²
+end
+
+function laplacian_correction!(∂²::ImplicitDerivative, ::Uniform, B::ImplicitFiniteDifferences, Z, ℓ)
+    if ℓ == 0 && Z ≠ 0
+        ρ = step(B)
+        # Eq. (17), Muller (1999)
+        δβ₁ = -Z*ρ/(12 - 10Z*ρ)
+        ∂².Δ[1,1] -= 2δβ₁/ρ^2
+        ∂².M[1,1] -= 2δβ₁/((-6)*(-2))
+
+        ∂².M⁻¹ = factorize(∂².M)
+    end
+    ∂²
+end
+
+function laplacian_correction!(∂²::ImplicitDerivative, ::NonUniform, B::ImplicitFiniteDifferences, Z, ℓ)
+    Z == 0 && return ∂²
+    a = B.r[1]
+    b = B.r[2] - a
+    if ℓ == 0
+        # Eq. (34), Patchkovskii (2016)
+        num = b*(a*(3a+4b)*Z - 6*(a+b))
+        ∂².Δ[1,1] = 2*(a+b)*(6a - (3a - b)*(a+b)*Z)/(a^2*num)
+        ∂².M[1,1] = (a+b)*(a*(a+b)*(a+3b)*Z - 3*(a^2 + 3b*a + b^2))/(3a*num)
+        ∂².M[1,2] = (a^3*(-Z) + a^2*(b*Z+3) + b*a*(2*b*Z-3) - 3*b^2)/(3*num)
+    else
+        a = B.r[1]
+        b = B.r[2] - a
+
+        # Eq. (35)
+        num = b*(3a+4b)
+        ∂².Δ[1,1] = (3a - b)*(a+b)^2/(a^3*numb)
+        ∂².M[1,1] = (a+b)^2*(a+3b)/(3a*num)
+        ∂².M[1,2] = -(a-2b)*(a+b)/(3num)
+    end
+    ∂².M⁻¹ = factorize(∂².M)
+    ∂²
+end
+
+laplacian_correction!(∂²::ImplicitDerivative, B::ImplicitFiniteDifferences, Z, ℓ) =
+    laplacian_correction!(∂², distribution(B), B, Z, ℓ)
+
+laplacian_correction!(∂², B::AbstractFiniteDifferences, Z, ℓ) = ∂²
+
+
+@materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
+                        CDc::QuasiAdjoint{<:Any,<:CoulombDerivative},
+                        CD::CoulombDerivative,
+                        B::BasisOrRestricted{<:AbstractFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 2)
+    end
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        @assert parent(CDc).Z == CD.Z
+        Dc = adjoint(parent(CDc).D)
+        D = CD.D
+
+        copyto!(dest, ApplyQuasiArray(*,Ac,Dc,D,A))
+        if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+            laplacian_correction!(dest, parent(B), CD.Z, CD.ℓ)
+        end
+        dest
+    end
+end
+
+@materialize function *(Ac::AdjointBasisOrRestricted{<:AbstractFiniteDifferences},
+                        CDc::QuasiAdjoint{<:Any,<:CoulombDerivative},
+                        O::QuasiDiagonal,
+                        CD::CoulombDerivative,
+                        B::BasisOrRestricted{<:AbstractFiniteDifferences})
+    T -> begin
+        derivative_matrix(T, Ac, B, 2)
+    end
+    dest::AbstractMatrix{T} -> begin
+        A = parent(Ac)
+        parent(A) == parent(B) ||
+            throw(ArgumentError("Cannot multiply functions on different grids"))
+
+        @assert parent(CDc).Z == CD.Z
+        Dc = adjoint(parent(CDc).D)
+        D = CD.D
+
+        copyto!(dest, ApplyQuasiArray(*,Ac,Dc,O,D,A))
+        if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+            laplacian_correction!(dest, parent(B), CD.Z, CD.ℓ)
+        end
+        dest
+    end
+end
+
+
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{R}, ::CoulombDerivative, ::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}} = Val(true)
+function LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{R}, CD::CoulombDerivative, B::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}}
+    D = CD.D
+    ∂ = implicit_derivative(T, ApplyQuasiArray(*,Ac,D,B), 1)
+    if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+        gradient_correction!(∂, parent(B), CD.Z, CD.ℓ)
+    end
+    ∂
+end
+
+LazyArrays.simplifiable(::typeof(*), ::AdjointBasisOrRestricted{R}, ::QuasiAdjoint{T,<:CoulombDerivative}, ::CoulombDerivative, ::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}} = Val(true)
+function LazyArrays._simplify(::typeof(*), Ac::AdjointBasisOrRestricted{R}, CDc::QuasiAdjoint{T,<:CoulombDerivative}, CD::CoulombDerivative, B::BasisOrRestricted{R}) where {T,R<:ImplicitFiniteDifferences{T}}
+    @assert parent(CDc).Z == CD.Z
+    Dc = adjoint(parent(CDc).D)
+    D = CD.D
+
+    ∂² = implicit_derivative(T, ApplyQuasiArray(*,Ac,Dc,D,B), 2)
+    if first(indices(parent(Ac),2)) == first(indices(B,2)) == 1
+        laplacian_correction!(∂², parent(B), CD.Z, CD.ℓ)
+    end
+    ∂²
+end

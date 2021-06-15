@@ -4,11 +4,11 @@
         B̃ = B[:,2:end-1]
         D = Derivative(axes(B,1))
 
-        BD = B'⋆D
-        BDD = B'⋆D'⋆D
+        BD = B'D
+        BDD = B'D'D
 
         @test BD*B == B'*D*B
-        @test_broken BDD*B == B'*D'*D*B
+        @test BDD*B == B'*D'*D*B
 
         @test B'D*B == B'*D*B
         @test B'D'D*B == B'*D'*D*B
@@ -120,7 +120,7 @@ function compute_fedvr_derivative_errors(a, b, Ns, order::Integer, s::Integer, e
             n = size(R,2)
             R = R[:,(1+s):(n-e)]
         end
-        R,1
+        R
     end
 end
 

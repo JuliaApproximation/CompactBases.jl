@@ -84,7 +84,7 @@
             @test all(isfinite, s′)
             @test all(!isnan, s)
             @test all(!isnan, s′)
-            @test s == s′
+            @test s ≈ s′ rtol=1e-14
         end
         @testset "Discontinuous knot set" begin
             t = ArbitraryKnotSet(3, [0.0, 1, 1, 3, 4, 6], 1, 3)
