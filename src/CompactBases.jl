@@ -1,7 +1,21 @@
 module CompactBases
-# The package actually supports precompilation, but doing `using CompactBases` with
-# precompilation on leads to a huge spike in memory, which does not happen when it's off.
-__precompile__(false)
+# The package does support precompilation, but doing `using CompactBases` with
+# precompilation on can lead to a huge spike in memory. That does not happen if disable
+# precompilation for CompactBases with __precompile__(false).
+#
+# So, if this is a problem for the user, it is possible to disable precompilation by setting
+# the COMPACTBASES_NO_PRECOMPILE environment variable. E.g. the user can set it when
+# launching Julia by doing
+#
+#     COMPACTBASES_NO_PRECOMPILE= julia
+#
+# or set it in the ~/.julia/config/startup.jl file by setting
+#
+#     ENV["COMPACTBASES_NO_PRECOMPILE"] = ""
+#
+# Note that any value will do, even an empty string, as only the presence of the variable is
+# checked.
+haskey(ENV, "COMPACTBASES_NO_PRECOMPILE") && __precompile__(false)
 
 import Base: eltype, axes, size, ==, getindex, checkbounds, copyto!, similar, show, step
 import Base.Broadcast: materialize
